@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
+	<title>Arch Linuxのインストール</title>
+</head>
+<body>
+	<header>
+		<a href="/">主頁</a> |
+		<a href="/about.html">自己紹介</a> |
+		<a href="/journal">日記</a> |
+		<a href="/farm">農業</a> |
+		<a href="/kitchen">台所</a> |
+		<a href="/computer">電算機</a> |
+		<a href="/poetry">詩</a> |
+		<a href="/books">本棚</a> |
+		<a href="/gallery">絵</a> |
+		<a href="/plant">植物</a> |
+		<a href="https://git.mtkn.jp">Git</a>
+	</header>
+	<main>
+		<article>
+<h1>Arch Linuxのインストール</h1>
+<time>2021-03-25</time>
+
+<h2>ハードウェア構成</h2>
+
+<h2>インストールの準備</h2>
+
+<h3>インストールメディアの入手</h3>
+
+<h3>署名の検証</h3>
+<pre><code>$ gpg --keyserver-options auto-key-retrieve --verify archlinux-<i>version</i>-x86_64.iso.sig
+</code></pre>
+
+<h3>インストールメディアの準備</h3>
+<pre><code>$ sudo dd bs=4M if=<i>path/to/arch/linux/iso</i> of=/dev/sd<i>X</i> status=progress oflag=sync
+</code></pre>
+
+<h3>ライブ環境の起動</h3>
+Arch Linux install medium (x86_64, UEFI)を選択
+
+<h3>インストールの記録</h3>
+<pre><code># script install.log
+</code></pre>
+
+<h3>起動モードの確認</h3>
+<pre><code># ls /sys/firmware/efi/efivars
+</code></pre>
+エラーが出なければUEFI。
+
+<h3>インターネットへ接続</h3>
+<p>
+ネットワークインターフェイスが認識されているか確認: 
+</p>
+<pre><code># ip link
+</code></pre>
+<p>
+Wi-Fi接続: 
+</p>
+<pre><code># iwctl
+[iwd]# device list
+...
+[iwd]# exit
+</code></pre>
+<p>
+接続を確認: 
+</p>
+<pre><code># ping archlinux.jp
+</code></pre>
+
+<h3>システムクロックの更新</h3>
+<pre><code># timedatectl set-ntp true
+</code></pre>
+
+<h3>パーティショニング</h3>
+<pre><code>sd<i>X</i>
+├sd<i>X</i>1 512M EFI System /boot
+└sd<i>X</i>2 lest Linux filesystem /
+</code></pre>
+<pre><code># lsblk
+# fdisk /dev/sd<i>X</i>
+Command (m for help): d
+...
+Command (m for help): w
+</code></pre>
+
+<h3>パーティションのフォーマット</h3>
+<pre><code># mkfs.fat -F32 /dev/sd<i>X</i>1
+# mkfs.ext4 /dev/sd<i>X</i>2
+</code></pre>
+
+<h3>ファイルシステムのマウント</h3>
+<pre><code># mount /dev/sd<i>X</i>2 /mnt
+# mkdir /mnt/boot
+# mount /dev/sd<i>X</i>1 /mnt/boot
+</code></pre>
+
+<h2>インストール</h2>
+<h3>ミラーの選択</h3>
+日本のサーバーを上に持ってくる: 
+<pre><code># vim /etc/pacman.d/mirrorlist
+</code></pre>
+
+<h3>必須パッケージのインストール</h3>
+<pre><code># pacstrap /mnt base base-devel linux linux-firmware man-db man-pages 
+</code></pre>
+
+<h3>fstabの生成</h3>
+<pre><code># genfstab -U /mnt >> /mnt/etc/fstab
+</code></pre>
+
+<h3>chroot</h3>
+<pre><code># arch-chroot /mnt
+</code></pre>
+
+<h3>text editorをインストール</h3>
+<pre><code># pacman -S neovim
+</code></pre>
+
+<h3>タイムゾーン</h3>
+<pre><code># ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+# hwclock --systohc
+</code></pre>
+
+<h3>ローカリゼーション</h3>
+<code>en_US.UTF-8</code>と<code>ja_JP.UTF-8</code>をコメントイン: 
+<pre><code># nvim /etc/locale.gen
+</code></pre>
+ロケールを生成: 
+<pre><code># locale-gen
+</code></pre>
+<pre><code># nvim /etc/locale.conf
+LANG=en_US.UTF-8
+</code></pre>
+
+<h3>ネットワーク設定</h3>
+<p>
+無線接続用のソフトをインストール
+</p>
+<pre><code># pacman -S networkmanager
+</code></pre>
+
+<p>
+ホストネームの設定
+</p>
+<pre><code># nvim /etc/hostname
+<i>myhostname</i>
+</code></pre>
+<pre><code># nvim /etc/hosts
+127.0.0.1	localhost
+::1		localhost
+127.0.1.1	<i>myhostname</i>.localdomain	<i>myhostname</i>	
+</code></pre>
+
+<h3>Rootパスワード</h3>
+<pre><code># passwd
+</code></pre>
+
+<h3>ブートローダー</h3>
+<p>
+インストール
+</p>
+<pre><code># pacman -S grub efibootmgr
+# grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=boot
+</code></pre>
+<p>
+メイン設定ファイルの生成
+</p>
+<pre><code># grub-mkconfig -o /boot/grub/grub.cfg
+</code></pre>
+
+<h3>マイクロコードのアップデートを有効化</h3>
+<pre><code># pacman -S intel-ucode
+# grub-mkconfig -o /boot/grub/grub.cfg
+上のん無駄やんけ
+</code></pre>
+
+<h2>再起動</h2>
+<pre><code># exit #chrootを抜ける
+</code></pre>
+
+<h3>インストールの記録を保存</h3>
+<pre><code># exit #scriptを停止
+# mv install.log /mnt/root
+</code></pre>
+
+<h3>アンマウント</h3>
+<pre><code># umount -R /mnt
+</code></pre>
+
+<h3>再起動</h3>
+<pre><code># reboot
+</code></pre>
+
+<h2>インストール後</h2>
+<h3>システム管理</h3>
+<p>
+一般ユーザーの作成
+</p>
+<pre><code># useradd -m -G wheel -s /bin/bash kenji
+# passwd kenji
+</code></pre>
+<p>
+作成したユーザーをsudoerに追加
+</p>
+<pre><code># visudo
+%wheel ALL=(ALL) ALL #uncomment
+</code></pre>
+<p>
+一般ユーザーとしてログインしなおす。
+</p>
+
+<h3>パッケージ管理</h3>
+<p>
+AUR
+</p>
+
+
+
+<h3>dotfilesを同期</h3>
+<p>
+gitのインストール
+</p>
+<pre><code>$ sudo pacman -S git
+$ git config --global user.name "<i>First-name</i> <i>Family-name</i>"
+$ git config --global user.email "<i>username</i>@<i>example.com</i>"
+</code></pre>
+<p>
+dotfilesを同期
+</p>
+<pre><code>$ mkdir ~/.local
+$ cd ~/.local
+$ git clone https://github.com/<i>dotfilesのリポジトリ</i>
+$ ln -sf ~/.local/dotfiles/.bash* ~/
+$ mkdir .config
+$ ln -s ~/.local/dotfiles/.config/* ~/.config/
+...
+</code></pre>
+
+<h3>GUI</h3>
+<p>
+グラフィックドライバのインストール
+</p>
+<pre><code>$ sudo pacman -S nvidia nvidia-utils xorg-xinit
+</code></pre>
+<p>
+window managerをインストール
+</p>
+<pre><code>$ sudo pacman -S i3-wm i3blocks dmenu
+</code></pre>
+ドライバをインストールしたらxorg-server等も依存関係として入った。
+<p>
+フォントをインストール
+</p>
+<pre><code>$ sudo pacman -S noto-fonts-cjk noto-fonts-emoji ttf-joypixels ttf-font-awesome ttf-liberation
+</code></pre>
+
+<p>
+ターミナル(st)をインストール
+</p>
+<pre><code>$ mkdir ~/.local/src
+$ cd ~/.local/src
+$ git clone git://git.suckless.org/st
+$ cd st
+$ sudo make install
+</code></pre>
+
+<p>
+再起動
+</p>
+<pre><code># sudo reboot
+</code></pre>
+だめでした
+<p>
+ログイン時に次のエラー
+</p>
+<pre><code>xauth: error in locking authority file /home/kenji/.cache/X11/Xauthority
+</code></pre>
+<p>
+<code>~/.cache/X11</code>というディレクトリがないのが原因のようだ。
+<code>.bash_profile</code>でXauthorityの場所を変更していたのにディレクトリを作っていなかった。
+</p>
+<pre><code>$ mkdir ~/.cache/X11
+</code></pre>
+<p>
+として解決。
+</p>
+
+<h3>日本語入力</h3>
+<p>
+ibusとibus-skkをインストール
+</p>
+<pre><code>$ sudo pacman -S ibus ibu-skk skk-jisyo
+</code></pre>
+<pre><code>vim ~/.config/X11/xinitrc
+export DefaultIMModule=ibus
+export GTK_IM_MODULE=ibus
+export QT_IM_MODULE=ibus
+export XMODIFIERS="@im=ibus"
+
+ibus-daemon --xim &
+</code></pre>
+
+<h3>ブラウザ(brave)をインストール</h3>
+<pre><code>$ cd ~/.local/src
+$ git clone https://aur.archlinux.org/brave-bin.git
+$ cd brave-bin
+$ makepkg -si
+</code></pre>
+
+<h3>音</h3>
+<pre><code>$ sudo pacman -S alsa-utilst pulseaudio
+$ pulseaudio --start
+</code></pre>
+
+
+<p>
+ssh
+</p>
+<pre><code>$ sudo pacman -S openssh
+$ mkdir ~/.ssh
+$ cd ~/.ssh
+$ ssh-keygen -t rsa
+</code></pre>
+		</article>
+
+	</main>
+	<footer>
+		<address>info(at)mtkn(dot)jp</address>
+		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
+	</footer>
+</body>
+</html>

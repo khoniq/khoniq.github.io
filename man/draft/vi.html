@@ -1,0 +1,34 @@
+<h1>vi -- テキストエディタ</h1>
+<time>2024-10-27</time>
+<h2>コマンドの実行</h2>
+<p>
+バッファにコピーした任意のテキストをコマンドとして実行できる。\
+</p>
+<ul>
+<li>
+コマンドをどこかの行に入力。
+</li>
+<li>
+コマンドをバッファ<code>q</code>へコピー:
+<code>\
+0"qy$
+</code>
+</li>
+<li>
+バッファ<code>q</code>内のコマンドを実行:
+<code>\
+@q
+</code>
+</li>
+</ul>
+<p>
+例えば単語をhtmlの<code>code</code>タグで囲むコマンド: \
+<pre><code>\
+i&lt;code&gt;<u>&lt;ctrl-v&gt;&lt;esc&gt;</u>\
+lea&lt;/code&gt;<u>&lt;ctrl-v&gt;&lt;esc&gt;</u>
+</code></pre>
+をどこかに入力し、その行でコマンドモードに移行し、<code>0"qy$</code>と\
+すると<code>q</code>バッファに上のコマンドがコピーされるので、\
+<code>code</code>タグで囲みたい単語の先頭に移動し、<code>@q</code>と入力すると\
+その単語が<code>code</code>タグで囲まれる。
+
