@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
+	<title>X11で深さが32bitのwindowを作成する</title>
+</head>
+<body>
+	<header>
+		<a href="/">主頁</a> |
+		<a href="/about.html">自己紹介</a> |
+		<a href="/journal">日記</a> |
+		<a href="/farm">農業</a> |
+		<a href="/kitchen">台所</a> |
+		<a href="/computer">電算機</a> |
+		<a href="/poetry">詩</a> |
+		<a href="/books">本棚</a> |
+		<a href="/gallery">絵</a> |
+		<a href="/plant">植物</a> |
+		<a href="https://git.mtkn.jp">Git</a>
+	</header>
+	<main>
+		<article>
+<h1>X11で深さが32bitのwindowを作成する</h1>
+<time>2025-12-20</time>
+
+<h2>結論</h2>
+<p>
+X11のrender拡張機能で半透明な画像を合成(composite)する際に深さが32bitのウィンドウを作成する必要がある。その際ドキュメントにも書いてなさそうな操作が必要だった。ウィンドウを作成する際に<code>border pixel</code>の値を設定する必要がある(言語はC):
+</p>
+
+<pre><code>// Xlibの場合
+XSetWindowAttributes attr32 = {
+	.border_pixel = 0, // 値はなんでもよさそう
+	.colormap = colormap32,
+}
+Window window32 = XCreateWindow(display, DefaultRootWindow(display),
+	0, 0, 1, 1, 0,
+	32, // depth
+	InputOutput,
+	visual32,
+	CWBorderPixel|CWColormap, // CWBorderPixelを指定
+	&amp;attr32);
+</code></pre>
+
+<pre><code>// xcbの場合
+uint32_t attr32[2] = { 0, colormap32 }; // 値はなんでもよさそう。
+xcb_create_window(conn, 32, window32, screen-&gt;root,
+	0, 0, 1, 1, 0,
+	XCB_WINDOW_CLASS_INPUT_OUTPUT,
+	visual32,
+	XCB_CW_BORDER_PIXEL|XCB_CW_COLORMAP, // XCB_CW_BORDER_PIXELを指定
+	&amp;attr32);
+</code></pre>
+
+<h2>出典</h2>
+<p>
+Go言語の<a href="https://cs.opensource.google/go/x/exp/+/8475f288:shiny/driver/x11driver/screen.go;drc=7b9b53b0aca47495e3a71d360c959fe1f14b5756;l=622">golang.org/x/exp/shiny/driver/x11driver/screen.go:622</a>に、
+</p>
+<blockquote cite="https://cs.opensource.google/go/x/exp/+/8475f288:shiny/driver/x11driver/screen.go;drc=7b9b53b0aca47495e3a71d360c959fe1f14b5756;l=622"><pre><code>	// The CwBorderPixel attribute seems necessary for depth == 32. See
+	// http://stackoverflow.com/questions/3645632/how-to-create-a-window-with-a-bit-depth-of-32
+</code></pre>
+</blockquote>
+<p>
+と書いていた。引用元を見るとXサーバーのソースコードを参照しており、そのコードでは親のウィンドウの深さと異なる深さのウィンドウを作成する場合、<code>CWBorderPixmap</code>又は<code>CWBorderPixel</code>を指定しないと<code>BadMatch</code>というエラーが返ってくるようになっている。理由はよく分からない:
+</p>
+<blockquote cite="https://cgit.freedesktop.org/xorg/xserver/tree/dix/window.c?h=xorg-server-21.1.21#n818">
+<pre><code>	if (((vmask &amp; (CWBorderPixmap | CWBorderPixel)) == 0) &amp;&amp;
+		(class != InputOnly) &amp;&amp; (depth != pParent-&gt;drawable.depth)) {
+		*error = BadMatch;
+		return NullWindow;
+	}
+</code></pre>
+</blockquote>
+
+<h2>深さ32bitのウィンドウの作成手順</h2>
+<h3>深さ32bitのヴィジュアルを取得</h3>
+<p>ウィンドウ作成の関数(<code>XCreateWindow</code>または<code>xcb_create_window</code>)に渡す32bitのヴィジュアルを取得する:
+</p>
+<pre><code>// xlibの場合
+int findVisual32(Display *display, XVisualInfo *return_visual_info);
+/* ... */
+int main(void) {
+	/* ... */
+	XVisualInfo vi32;
+	if (findVisual32(display, &amp;vi32) &lt; 0) {
+		fatal(&quot;32bit-deep visual info not found&quot;);
+	}
+	/* ... */
+}
+/* ... */
+int findVisual32(Display *display, XVisualInfo *return_visual_info) {
+	long mask = VisualDepthMask|VisualRedMaskMask|VisualGreenMaskMask|VisualBlueMaskMask;
+	XVisualInfo template = {
+		.depth      = 32,
+		.red_mask   = 0xff0000,
+		.green_mask = 0x00ff00,
+		.blue_mask  = 0x0000ff,
+	};
+	int n;
+	XVisualInfo *vinfos = XGetVisualInfo(display, mask, &amp;template, &amp;n);
+	if (n == 0) {
+		return -1;
+	}
+	*return_visual_info = vinfos[0];
+	XFree(vinfos);
+	return 0;
+}
+</pre></code>
+
+<pre><code>// xcbの場合
+int findVisual32(xcb_screen_t *screen, xcb_visualtype_t *return_visualtype);
+/* ... */
+int main(void) {
+	/* ... */
+	xcb_visualtype_t visual32;
+	if (findVisual32(screen, &amp;visual32) &lt; 0) {
+		fatal(&quot;32bit visual not found&quot;);
+	}
+	/* ... */
+}
+/* ... */
+int findVisual32(xcb_screen_t *screen, xcb_visualtype_t *return_visualtype) {
+	xcb_depth_iterator_t depth_iter = xcb_screen_allowed_depths_iterator(screen);
+	for (;depth_iter.rem &gt; 0; xcb_depth_next(&amp;depth_iter)) {
+		xcb_depth_t *d = depth_iter.data;
+		if (d-&gt;depth != 32) {
+			continue;
+		}
+		xcb_visualtype_iterator_t visual_iter = xcb_depth_visuals_iterator(d);
+		while (visual_iter.rem &gt; 0) {
+			xcb_visualtype_t *v = visual_iter.data; 
+			if (v-&gt;red_mask == 0xff0000 &amp;&amp; v-&gt;green_mask == 0x00ff00 &amp;&amp; v-&gt;blue_mask == 0x0000ff) {
+				*return_visualtype = *v;
+				return 0;
+			}
+			xcb_visualtype_next(&amp;visual_iter);
+		}
+	}
+	return -1;
+}
+</code></pre>
+
+<h3>深さ32bitのカラーマップを作成</h3>
+<p>ウィンドウ作成の関数(<code>XCreateWindow</code>または<code>xcb_create_window</code>)に渡す32bitのカラーマップを作成する。
+</p>
+<pre><code>// xlibの場合
+	Colormap colormap32 = XCreateColormap(display, DefaultRootWindow(display), vi32.visual, AllocNone);
+</code></pre>
+<pre><code>// xcbの場合
+	xcb_colormap_t colormap32 = xcb_generate_id(conn);
+	xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, colormap32, screen-&gt;root, visual32.visual_id);
+</code></pre>
+
+<h3>深さ32bitのウィンドウを作成</h3>
+<p>最後にウィンドウを作成する:</p>
+<pre><code>// xlibの場合
+	Window window32 = XCreateWindow(display, DefaultRootWindow(display),
+		0, 0, 1, 1, 0,
+		32,
+		InputOutput,
+		vi32.visual,
+		CWBorderPixel|CWColormap,
+		&attr32);
+</code></pre>
+<pre><code>// xcbの場合
+	uint32_t attr32[2] = { 0, colormap32 }; 
+	xcb_create_window(conn, 32, window32, screen->root,
+		0, 0, 1, 1, 0,
+		XCB_WINDOW_CLASS_INPUT_OUTPUT,
+		visual32.visual_id,
+		XCB_CW_BORDER_PIXEL|XCB_CW_COLORMAP, &attr32);
+</code></pre>
+
+<h2>サンプルコード</h2>
+32bitのウィンドウを作成し、そこからrender拡張機能を使って半透明な四角形を描画するプログラムを作った。OpenBSDで動作確認した。他のUnixでも多分動くと思う:<br>
+<a href="https://git.mtkn.jp/win32">git.mtkn.jp/win32</a>
+
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://azelpg.gitlab.io/azsky2/note/prog/x11/03_visual.html">X11: ビジュアル</a></li>
+</ol>
+		</article>
+
+	</main>
+	<footer>
+		<address>info(at)mtkn(dot)jp</address>
+		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
+	</footer>
+</body>
+</html>

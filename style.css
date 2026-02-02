@@ -1,0 +1,129 @@
+:root {
+	--dbg:  #000000;
+	--dbg2: #000000;
+	--dfg:  #ffffff;
+	--dfg2: #80ff80;
+	--lbg:  #ffffff;
+	--lbg2: #ffffff;
+	--lfg:  #000000;
+	--lfg2: #009900;
+}
+
+a {
+	text-decoration: none;
+}
+
+i {
+	font-style: italic;
+}
+
+figure {
+	padding: 1em;
+	overflow-x: auto;
+}
+
+figcaption {
+	font-style: italic;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table th,
+table td {
+	border: 1px solid;
+}
+
+img {
+	max-width: 100%;
+}
+
+code {
+}
+
+pre {
+	padding: 1em;
+	border-style: solid;
+	border-radius: 5px;
+	border-width: 1px;
+	overflow-x: auto;
+}
+
+body {
+	font-family: serif;
+	max-width: 1300px;
+	margin: 5px auto;
+}
+
+header {
+	padding: 5px;
+	border-bottom: 1px solid;
+}
+
+header a {
+	word-break: keep-all;
+}
+
+main {
+	padding: 5px;
+}
+
+footer {
+	padding: 5px;
+	border-top: 1px solid;
+}
+
+footer *{
+	display: inline;
+}
+
+@media (prefers-color-scheme: dark) {
+	html {
+		background-color: var(--dbg);
+		color: var(--dfg);
+	}
+	a {
+		color: var(--dfg2);
+	}
+	pre {
+		background-color: var(--dbg2);
+		border-color: var(--dfg);
+	}
+}
+
+@media (prefers-color-scheme: light) {
+	html {
+		background-color: var(--lbg);
+		color: var(--lfg);
+	}
+	a {
+		color: var(--lfg2);
+	}
+	pre {
+		background-color: var(--lbg2);
+		border-color: var(--lfg);
+	}
+}
+
+.portrait {
+	margin: 10px;
+}
+
+.farm-journal-item {
+	margin: 30px auto;
+}
+
+.farm-journal-date time{
+	font-size: x-small;
+}
+
+.galind {
+	display: flex;
+	flex-wrap: wrap;
+	list-style: none;
+}
+
+.galind li {
+	max-width: 300px;
+}

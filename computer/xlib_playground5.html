@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
+	<title>Xlibで遊んでみる5</title>
+</head>
+<body>
+	<header>
+		<a href="/">主頁</a> |
+		<a href="/about.html">自己紹介</a> |
+		<a href="/journal">日記</a> |
+		<a href="/farm">農業</a> |
+		<a href="/kitchen">台所</a> |
+		<a href="/computer">電算機</a> |
+		<a href="/poetry">詩</a> |
+		<a href="/books">本棚</a> |
+		<a href="/gallery">絵</a> |
+		<a href="/plant">植物</a> |
+		<a href="https://git.mtkn.jp">Git</a>
+	</header>
+	<main>
+		<article>
+<h1>Xlibで遊んでみる5</h1>
+<time>2023-01-03</time>
+
+<p>
+前回: <a href="xlib_playground4.html">Xlibで遊んでみる4</a>
+</p>
+<p>
+言語: C言語<br />
+ソースコード: <a href="https://git.mtkn.jp/xlib_playground">git</a>
+</p>
+
+<h2>円の衝突判定とその処理</h2>
+<p>
+前回四角形で行っていた衝突判定とその処理を今回は円でした。衝突の判定は二つの円の中心間の距離と、各円の半径の和を比較するだけなので簡単である:
+</p>
+<pre><code>struct circle {
+	float ppx, ppy;  // previous position (center)
+	float px, py;    // current position (center)
+	float vx, vy;    // velocity
+	int r;           // radius
+	int m;           // mass
+};
+
+int
+circle_test_collision(struct circle *c1, struct circle *c2)
+{
+	return (c1-&gt;px - c2-&gt;px) * (c1-&gt;px - c2-&gt;px) +
+	       (c1-&gt;py - c2-&gt;py) * (c1-&gt;py - c2-&gt;py) &lt;
+		   (c1-&gt;r + c2-&gt;r) * (c1-&gt;r + c2-&gt;r);
+}
+</code></pre>
+
+<p>
+衝突後は前回と同じく弾性衝突として処理した。四角形とは違い、衝突方向の場合分けが不要なので楽である。
+</p>
+<pre><code>
+void
+circle_handle_collision_mm(struct circle *c1, struct circle *c2)
+{
+	if (!circle_test_collision(c1, c2))
+		return;
+
+	float col_px = c2-&gt;px - c1-&gt;px;
+	float col_py = c2-&gt;py - c1-&gt;py;
+	float col_pr = sqrtf(col_px * col_px + col_py * col_py);
+	col_px /= col_pr;
+	col_py /= col_pr;
+
+	c1-&gt;px = c1-&gt;px - col_px / 2;
+	c1-&gt;py = c1-&gt;py - col_py / 2;
+	c2-&gt;px = c2-&gt;px + col_px / 2;
+	c2-&gt;py = c2-&gt;py + col_py / 2;
+}
+
+void
+circle_handle_collision_elastic(struct circle *c1, struct circle *c2)
+{
+	if(!circle_test_collision(c1, c2))
+		return;
+
+	float col_px = c2-&gt;px - c1-&gt;px;
+	float col_py = c2-&gt;py - c1-&gt;py;
+	float col_pr = sqrtf(col_px * col_px + col_py * col_py);
+	col_px /= col_pr;
+	col_py /= col_pr;
+	float nor_px = col_py;
+	float nor_py = -col_px;
+
+	float m1 = c1-&gt;m;
+	float m2 = c2-&gt;m;
+
+	float col_1v = c1-&gt;vx * col_px + c1-&gt;vy * col_py;
+	float col_2v = c2-&gt;vx * col_px + c2-&gt;vy * col_py;
+
+	float col_1vxn = (2*m2/(m1+m2)*col_2v + (m1-m2)/(m1+m2)*col_1v) * col_px;
+	float col_1vyn = (2*m2/(m1+m2)*col_2v + (m1-m2)/(m1+m2)*col_1v) * col_py;
+	float col_2vxn = (2*m1/(m1+m2)*col_1v + (m2-m1)/(m1+m2)*col_2v) * col_px;
+	float col_2vyn = (2*m1/(m1+m2)*col_1v + (m2-m1)/(m1+m2)*col_2v) * col_py;
+
+	float nor_1vx = nor_px * (c1-&gt;vx * nor_px + c1-&gt;vy * nor_py);
+	float nor_1vy = nor_py * (c1-&gt;vx * nor_px + c1-&gt;vy * nor_py);
+	float nor_2vx = nor_px * (c2-&gt;vx * nor_px + c2-&gt;vy * nor_py);
+	float nor_2vy = nor_py * (c2-&gt;vx * nor_px + c2-&gt;vy * nor_py);
+
+	c1-&gt;vx = col_1vxn + nor_1vx;
+	c1-&gt;vy = col_1vyn + nor_1vy;
+	c2-&gt;vx = col_2vxn + nor_2vx;
+	c2-&gt;vy = col_2vyn + nor_2vy;
+
+	circle_handle_collision_mm(c1, c2);
+}
+</code></pre>
+
+<h2>完成品</h2>
+<p>
+<a href="https://git.mtkn.jp/xlib_playground/file/ex5/ex5.c.html">git</a>
+</p>
+<p>
+<video controls>
+<source src="videos/ex5.webm" type="video/webm">
+</video>
+</p>
+
+<h2>参考</h2>
+<ul>
+<li><a href="https://tronche.com/gui/x/xlib/">The Xlib Manual(html conversion)</a></li>
+</ul>
+<p>
+次の記事: <a href="xlib_playground6.html">Xlibで遊んでみる6</a>
+</p>
+		</article>
+
+	</main>
+	<footer>
+		<address>info(at)mtkn(dot)jp</address>
+		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
+	</footer>
+</body>
+</html>

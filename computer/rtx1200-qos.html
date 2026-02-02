@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
+	<title>ルーター(RTX1200)のQoS機能を利用して帯域を制限した</title>
+</head>
+<body>
+	<header>
+		<a href="/">主頁</a> |
+		<a href="/about.html">自己紹介</a> |
+		<a href="/journal">日記</a> |
+		<a href="/farm">農業</a> |
+		<a href="/kitchen">台所</a> |
+		<a href="/computer">電算機</a> |
+		<a href="/poetry">詩</a> |
+		<a href="/books">本棚</a> |
+		<a href="/gallery">絵</a> |
+		<a href="/plant">植物</a> |
+		<a href="https://git.mtkn.jp">Git</a>
+	</header>
+	<main>
+		<article>
+<h1>ルーター(RTX1200)のQoS機能を利用して帯域を制限した</h1>
+<time>2022-01-14</time>作成
+<h2>はじめに</h2>
+<p>一人暮らししていた頃節約にはまり、下宿の固定回線を解約したうえ、携帯の回線を128kbpsしかでないものに変更したことがある。以来通信費をどうやって抑えるかあれこれ考えてきた。現在は実家に暮らしていて、家で契約している光回線を使わせてもらっている。携帯の方は楽天モバイルであり、外で使うことはまずないので毎月の支払いは発生していない。しかしいずれこの家をでた時に、楽天モバイルの回線だけでは結局月々3278円と大きな出費になる。また、通信速度が遅い生活というのは雑音の少ない充実したものであった経験もある。こんなことを考えていたところ、通信速度が128kbpsだが無料で利用できる格安sim<sup>[1]</sup>を発見した。この速度に慣れておけば、通信費が全くかからない生活ができる。ということで家で使っているルーターの設定を変更し、通信帯域を制限してみた。</p>
+<h2>機材</h2>
+<ul>
+	<li>ルーター: Yamaha RTX1200</li>
+	<li>無線アクセスポイント: elecomのルーター</li>
+	<li>パソコン: Lenovo x220</li>
+	<li>パソコンのOS: OpenBSD 7.0</li>
+</ul>
+<h2>設定したい内容</h2>
+<p>RTX1200のLAN2ポートにWANが接続されており、LAN1には家で使っている端末がいろいろ接続されている。LAN3は今回は関係ないので割愛する。LAN1を2つのvlanに分割し、1-7番のポートをvlan1、8番のポートをvlan2する。そしてこのvlan2とインターネットとの通信を上下とも128kbpsに制限する。vlan2と他のlanとの通信は制限しない。vlan2にelecomのルーターを無線アクセスポイントとして接続し、僕が使うパソコンやスマホはこのアクセスポイントに接続する。</p>
+<figure>
+<pre>
+	                         Internet
+	                            |
+	      ┌-------┬-----------┬-┴--┬----┐
+	      |RTX1200|LAN1       |LAN2|LAN3|
+	      └-------┴-┬-------┬-┴----┴----┘
+	              vlan1   vlan2
+	      192.168.100.1   192.168.101.1
+	                |       |
+	┌------------┐  |       |    ┌-----------┐   ┌-----┐
+	|home network├--┘       └----┤elecom wifi├---┤my PC|
+	└------------┘               └-----------┘   └-----┘
+	192.168.100.0/24         192.168.101.0/24
+</pre>
+<figcaption>図1: 接続と設定の概略</figcaption>
+</figure>
+
+<h2>vlanについて</h2>
+<p>ヤマハのページにvlanについて以下のような説明がある:</p>
+<blockquote cite="https://www.rtpro.yamaha.co.jp/RT/docs/vlan/">物理的な接続形態に依存せず仮想的にグループを形成してひとつのLANとみなすものが、VLAN(Virtual LAN)です。VLANには、スイッチの物理ポート単位でVLANを形成するポートベースVLANと、パケットにタグと呼ばれるヘッダを付加してVLAN情報を格納するタグVLANとがあります<sup>[2]</sup>。</blockquote>
+<p>
+ここではLAN1にある8つのポートをvlanによって2つの論理的なLANに分割する。しかしこの後設定するクラス分けでは送信元や宛先のアドレスによる分類ができるので帯域幅を制限したい端末のIPアドレスを固定しておくだけでよかったんやけどな。
+</p>
+
+<h2>クラス分けについて</h2>
+<p>クラス分けについてヤマハのページに以下のような説明がある:</p>
+<blockquote cite="https://network.yamaha.com/knowledge/qos">優先して転送するデータを判別するために、受信したデータを分類します。<br />
+データの分類には、転送データに含まれている情報を使用します。<sup>[3]</sup></blockquote>
+<p>
+各ポートから出ていくパケットについて、そのパケットの送信元アドレスや宛先アドレス等の情報に基づきクラスに分類する。このクラス毎に様々な処理が可能なのだが[要出典]、今回はvlan2とインターネットとの通信をクラス1として、このクラスに対して帯域幅を128kbpsに制限する。
+</p>
+
+<h2>実際の設定</h2>
+<p>RTX1200において行った設定は以下の通り。ただし、LAN2にppの設定をし、LAN1とインターネットとの通信ができるところまでは既に設定済みとし、以降の変更点だけ抜粋する。</p>
+<p>始めにLAN1を2つのvlanに分割する:
+<pre><code># vlan port mapping lan1.1 vlan1
+# vlan port mapping lan1.2 vlan1
+# vlan port mapping lan1.3 vlan1
+# vlan port mapping lan1.4 vlan1
+# vlan port mapping lan1.5 vlan1
+# vlan port mapping lan1.6 vlan1
+# vlan port mapping lan1.7 vlan1
+# vlan port mapping lan1.8 vlan2
+# lan type lan1 port-based-option=divide-network
+</code></pre>
+<p>
+続いて各vlanの設定を行う。ただしvlan1はlan1の設定を受け継ぐので不要。
+</p>
+<pre><code># ip vlan2 address 192.168.101.1/24
+# ip vlan2 secure filter <i>&lt;vlan1と同じパケットフィルター&gt;</i>
+</code></pre>
+<p>次にクラスフィルターを定義:</p>
+<pre><code># queue class filter 1 1 ip 192.168.101.0/24 * * * *
+# queue class filter 2 1 ip * 192.168.101.0/24 * * *
+# queue class filter 3 2 ip 192.168.100.0/24 192.168.101.0/24 * * *
+</code></pre>
+<p>
+上の2行はvlan2とその他との通信を制限するためのものである。ただしこの2つだけではvlan1からvlan2への通信まで制限してしまうので、それを除外するために3行目のクラスフィルターを定義する。
+</p>
+<p>次にクラスフィルタをvlan2に適応。これによりルーターから192.168.101.0/24への通信がフィルタリングされる。</p>
+<pre><code># queue lan1 type shaping
+# queue vlan2 class filter list 3 2
+</code></pre>
+<p>
+2行目で指定したフィルターはその指定した順番で評価されるので注意が必要。<br />
+そしてクラスに対する制限を指定:
+</p>
+<pre><code># queue lan1 class property 1 bandwidth=128k
+</code></pre>
+<p>次はlan2(pp)にクラスフィルタを適応。これにより192.168.101.0/24からルーターへの通信がフィルタリングされる。</p>
+<pre><code># queue lan2 type shaping
+# pp select <i>n</i>
+pp<i>n</i># queue pp class filter list 1
+</code></pre>
+<p>
+vlan2の時と同様にクラスに制限を設定:
+</p>
+<pre><code># queue lan2 class property 1 bandwidth=128k
+</code></pre>
+
+<h2>パソコンでの設定</h2>
+<p>最後にパソコンから今回作ったvlan2に接続するように設定する:</p>
+<pre><code># cat > /etc/hostname.<i>if</i> &lt;&lt;EOS
+join <i>&lt;アクセスポイントのECS-ID&gt;</i> wpakey <i>&lt;アクセスポイントの暗号化キー&gt;</i>
+inet 192.168.101.2/24
+EOS
+# echo 192.168.101.1 > /etc/mygate
+</code></pre>
+
+<h2>おわりに</h2>
+<p>めっちゃ遅い。</p>
+
+<h2>参考文献</h2>
+<ol>
+	<li><a href="https://www.donedone.jp/plan/">料金プラン-50ギガの大容量SIM ｜ donedone(ドネドネ)　ドネーション型モバイルサービス</a>.donedone.2022-01-14閲覧</li>
+	<li><a href="https://www.rtpro.yamaha.co.jp/RT/docs/vlan/">VLAN</a>.RTpro.2022-01-14閲覧</li>
+	<li><a href="https://network.yamaha.com/knowledge/qos">QoSとは</a>.RTpro.2022-01-14閲覧</li>
+	<li><a href="https://changineer.info/network/yamaha_router_rtx/yamaha_router_rtx_vlan_port_example.html">Yamaha RTX ルータのセキュリティのデフォルト設定解説(CLIの場合)</a>.ネットワークチェンジニアとして.2022-01-14閲覧</li>
+</ol>
+		</article>
+
+	</main>
+	<footer>
+		<address>info(at)mtkn(dot)jp</address>
+		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
+	</footer>
+</body>
+</html>
