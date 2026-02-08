@@ -1,38 +1,28 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>Xlibで遊んでみる</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>Xlibで遊んでみる</h1>
 <time>2022-12-16</time>
 
 <h2>はじめに</h2>
-<p>X11でGUIのプログラミングをしてみようと思い、してみた。X11用の低レベルのライブラリはXlibとxcbの二つがあるようだ。x.orgのウェブページを見てみると、Xlibは古く、xcbに置きかわりつつあるという。そのため、新しくなにかを作る場合はxcbを使うようにとのことである。ところがこのxcbはドキュメンテーションに乏しく、X11を触るのが初めての人間にはなにをどうすればいいのかほとんど分からなかった。知らない関数や構造体やらがでてきても（殆ど全部知らないものだが）、その関数なり構造体なりの説明がどこにも見当たらない。manページもない。あるのはdoxygenなるものでソースコードのコメントから自動生成したいい加減なものだけで、使いものにならない。</p>
-<p>とりあえずX11のことを少しは理解してからでないと初められそうもないと思い、もう少しましな情報があるXlibから始めることにした。</p>
-<p>言語はC言語である。ソースコードは<a href="https://git.mtkn.jp/xlib_playground">ここ</a>にある。
+<p>X11でGUIのプログラミングをしてみようと思い、してみた。\
+X11用の低レベルのライブラリはXlibとxcbの二つがあるようだ。\
+x.orgのウェブページを見てみると、Xlibは古く、xcbに置きかわりつつあるという。\
+そのため、新しくなにかを作る場合はxcbを使うようにとのことである。\
+ところがこのxcbはドキュメンテーションに乏しく、\
+X11を触るのが初めての人間にはなにをどうすればいいのかほとんど分からなかった。\
+知らない関数や構造体やらがでてきても（殆ど全部知らないものだが）、\
+その関数なり構造体なりの説明がどこにも見当たらない。\
+manページもない。あるのはdoxygenなるものでソースコードのコメントから\
+自動生成したいい加減なものだけで、使いものにならない。</p>
+<p>とりあえずX11のことを少しは理解してからでないと初められそうもないと思い、\
+もう少しましな情報があるXlibから始めることにした。\
+</p>
+<p>言語はC言語である。ソースコードは\
+<a href="https://git.mtkn.jp/xlib_playground">ここ</a>にある。
 
 <h2>初期設定</h2>
-<p>ディスプレイを開き、ウィンドウを作成する。変数はとりあえずグローバルに宣言することにした。<code>main</code>関数はできるだけ小さくして実際の処理はそれぞれの関数にさせてみる:</p>
+<p>ディスプレイを開き、ウィンドウを作成する。\
+変数はとりあえずグローバルに宣言することにした。\
+<code>main</code>関数はできるだけ小さくして実際の処理は\
+それぞれの関数にさせてみる:</p>
 <pre><code>
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
@@ -91,7 +81,8 @@ clean_up(void)
 }
 </code></pre>
 
-<p>適当な四角形のものを表示し、その位置を時間の関数として動かしてみる。</p>
+<p>適当な四角形のものを表示し、その位置を時間の関数として動かしてみる。\
+</p>
 <pre><code>#include &lt;time.h&gt;
 
 int
@@ -151,17 +142,23 @@ main(void)
 <p>文字を表示。<code>XDrawString</code></p>
 
 <h2>キーボード入力</h2>
-<p>キーボードの入力を受け付けるようにする。入力によって四角形の位置や速度を変化させる。</p>
+<p>キーボードの入力を受け付けるようにする。\
+入力によって四角形の位置や速度を変化させる。</p>
 <p>ここまでできればかなりなんでもできるようになる。</p>
 
 <h2>FPSの固定</h2>
-<p>前のフレームからの経過時間を計測して1/FPSを越えるまで待機させる。このときに<code>nanosleep</code>を使うとなぜか上手くいかなかった。OSに処理をブロックされる為か？とりあえず<code>while</code>ループの中でひたすら時刻を読んでいるのだが、これでいいんかな。リソースの無駄遣いではないんかな。</p>
+<p>前のフレームからの経過時間を計測して1/FPSを越えるまで待機させる。\
+このときに<code>nanosleep</code>を使うとなぜか上手くいかなかった。\
+OSに処理をブロックされる為か？とりあえず<code>while</code>ループの中で\
+ひたすら時刻を読んでいるのだが、これでいいんかな。\
+リソースの無駄遣いではないんかな。</p>
 
 <h2>メニューの実装</h2>
 <p>メニューとゲームの推移を実装した。</p>
 
 <h2>当たり判定</h2>
-<p>とりあえず適当に実装した。2体間の衝突のみ判定しているので近くに別の物体がいるとめりこむ場合がある。</p>
+<p>とりあえず適当に実装した。\
+2体間の衝突のみ判定しているので近くに別の物体がいるとめりこむ場合がある。</p>
 </p>
 
 
@@ -170,12 +167,3 @@ main(void)
 <li><a href="https://tronche.com/gui/x/xlib/">The Xlib Manual(html conversion)</a></li>
 <li><a href="https://www.youtube.com/watch?v=764fnfEb1_c">X11 App in C with Xlib(youtube video by tsoding)</a></li>
 </ul>
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>

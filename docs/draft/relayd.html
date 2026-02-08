@@ -1,66 +1,44 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>relayd、httpd、acme-client</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>relayd、httpd、acme-client</h1>
 <time>2025-07-17</time>
 
 <h2>はじめに</h2>
 <p>
-このサーバーでは<code>httpd</code>により80番ポートと443番ポートを監視してウェブサイトを運用していたが、別のソフトウェアを使ってバーチャルホストを立てたくなった。そこで、<code>httpd</code>の手前に<code>relayd</code>を挟んで、外から80番、443番ポートへの通信をサブドメインによって振り分けるようにした。</p>
+このサーバーでは<code>httpd</code>により80番ポートと443番ポートを監視して\
+ウェブサイトを運用していたが、別のソフトウェアを使ってバーチャルホストを立てたくなった。\
+そこで、<code>httpd</code>の手前に<code>relayd</code>を挟んで、\
+外から80番、443番ポートへの通信をサブドメインによって振り分けるようにした。\
+</p>
 
 <figure>
 <figcaption>Before</figcaption>
-<pre>Internet -- tcp/80,443 -- httpd
+<pre>\
+Internet -- tcp/80,443 -- httpd
 </pre>
 </figure>
 <figure>
 <figcaption>After</figcaption>
-<pre>Internet -- tcp/80,443 -- relayd -- tcp/8080,8443 -- httpd
+<pre>\
+Internet -- tcp/80,443 -- relayd -- tcp/8080,8443 -- httpd
                               └------ tcp/8081 -- other http server
 </pre>
 </figure>
 
 <h2>httpd.conf</h2>
 <p>
-<code>httpd.conf</code>は80番ポートを監視している部分はポート番号を変更するだけでいい。443番ポートの方はポート番号の変更に加え、<code>tls</code>の部分を削除する。tlsは<code>relayd</code>が行なう。</p>
+<code>httpd.conf</code>は80番ポートを監視している部分はポート番号を変更するだけでいい。\
+443番ポートの方はポート番号の変更に加え、<code>tls</code>の部分を削除する。\
+tlsは<code>relayd</code>が行なう。\
+</p>
 
 <h2>acme-client.conf</h2>
 <p>
-こちらは<code>full chain certificate</code>のパス<code>relayd</code>が見つけられるように変更する。
+こちらは<code>full chain certificate</code>のパス<code>relayd</code>が見つけられるように\
+変更する。
 </p>
 
 <h2>relayd.conf</h2>
 <p>
-80番ポートはそのまま8080番に転送する。443番ポートはtlsをかませて8443番に転送する。</p>
+80番ポートはそのまま8080番に転送する。\
+443番ポートはtlsをかませて8443番に転送する。\
+</p>
 
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>
