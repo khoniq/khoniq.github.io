@@ -1,28 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>Xlibで遊んでみる3</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>Xlibで遊んでみる3</h1>
 <time>2023-01-02</time>
 
@@ -31,14 +6,21 @@
 </p>
 <p>
 言語: C言語<br />
-ソースコード: <a href="https://git.mtkn.jp/xlib_playground">git</a>
+ソースコード: \
+<a href="https://git.mtkn.jp/xlib_playground">git</a>
 </p>
 
 <h2>画面サイズの変更</h2>
 <p>
-画面サイズが変更された時に表示している四角形が画面の外側に出ないようにした。<code>XGetWindowAttributes()</code>で画面の情報を取得し、グローバル変数の<code>win_width</code>と<code>win_height</code>に幅と高さをそれぞれ代入して<code>next_tick()</code>で四角形の位置を画面に収まるようにしている:
+画面サイズが変更された時に表示している四角形が画面の外側に\
+出ないようにした。<code>XGetWindowAttributes()</code>で\
+画面の情報を取得し、グローバル変数の<code>win_width</code>\
+と<code>win_height</code>に幅と高さをそれぞれ代入して\
+<code>next_tick()</code>で四角形の位置を画面に収まるよう\
+にしている:
 </p>
-<pre><code>int win_width, win_height;
+<pre><code>\
+int win_width, win_height;
 
 void
 receive_events(int key_state[])
@@ -78,9 +60,14 @@ next_tick(long ndt) // nano second
 
 <h2>メニュー画面の実装</h2>
 <p>
-ゲームのようなものを作るうえでメニュー画面とその推移が必要である。ここではグローバル変数<code>next_menu</code>に現在のメニューを保存することにした。それぞれのメニューはそれぞれ関数として記述し、他のメニューに推移する必要が生じたときに<code>next_menu</code>を変更するようにした:
+ゲームのようなものを作るうえでメニュー画面とその推移が必要である。\
+ここではグローバル変数<code>next_menu</code>に現在のメニューを保存\
+することにした。それぞれのメニューはそれぞれ関数として記述し、\
+他のメニューに推移する必要が生じたときに<code>next_menu</code>\
+を変更するようにした:
 </p>
-<pre><code>enum next_menu {
+<pre><code>\
+enum next_menu {
 	START_MENU,
 	GAME_PLAY,
 	GAME_OVER,
@@ -185,14 +172,6 @@ main(void)
 <li><a href="https://tronche.com/gui/x/xlib/">The Xlib Manual(html conversion)</a></li>
 </ul>
 <p>
-次の記事: <a href="xlib_playground4.html">Xlibで遊んでみる4</a>
+次の記事: \
+<a href="xlib_playground4.html">Xlibで遊んでみる4</a>
 </p>
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>

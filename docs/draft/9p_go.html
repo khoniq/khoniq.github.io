@@ -1,36 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>9PのGoによる実装</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>9PのGoによる実装</h1>
 <time>2024-12-18</time>
 
 <h2>メッセージの構造体の定義</h2>
 <p>
-メッセージには<code>size</code>、<code>tag</code>等共通の要素がある。クライアントからメッセージを受けとる際、<code>size</code>を参照して何バイト読むか判断し、メッセージの<code>type</code>によりその後の処理を場合分けする。そのためにメッセージを<code>interface</code>として定義した:
+メッセージには<code>size</code>、<code>tag</code>等共通の要素がある。\
+クライアントからメッセージを受けとる際、\
+<code>size</code>を参照して何バイト読むか判断し、\
+メッセージの<code>type</code>によりその後の処理を場合分けする。\
+そのためにメッセージを<code>interface</code>として定義した:
 </p>
-<pre><code>// A Msg represents any kind of message of 9P.
+<pre><code>\
+// A Msg represents any kind of message of 9P.
 // It defines methods for common fields.
 // For each message type &lt;T&gt;, new&lt;T&gt;([]byte) function parses the byte array
 // of 9P message into the corresponding message struct.
@@ -56,10 +36,23 @@ type Msg interface {
 }
 </code></pre>
 <p>
-<code>marshal()</code>はサーバーから返信を送る際にメッセージの構造体をバイト列にエンコードするための関数である。<code>String() string</code>はログ出力用。</p>
+<code>marshal()</code>はサーバーから返信を送る際に\
+メッセージの構造体をバイト列にエンコードするための関数である。\
+<code>String() string</code>はログ出力用。\
+</p>
 <p>
-メッセージはバイト列として受け取った後、メッセージのタイプによって処理を分ける。その際、扱いやすいようにバイト列を各メッセージの構造体に変換する。変換前のバイト列から、各メッセージに共通のフィールドを取得できると便利なので、バイト列のまま<code>Msg</code>インターフェースを実装する<code>bufMsg</code>を定義した。名前はいまいち。</p>
-<pre><code>type bufMsg []byte
+メッセージはバイト列として受け取った後、\
+メッセージのタイプによって処理を分ける。\
+その際、扱いやすいようにバイト列を各メッセージの構造体に\
+変換する。\
+変換前のバイト列から、各メッセージに共通のフィールドを\
+取得できると便利なので、\
+バイト列のまま<code>Msg</code>インターフェースを実装する\
+<code>bufMsg</code>を定義した。\
+名前はいまいち。\
+</p>
+<pre><code>\
+type bufMsg []byte
 
 func (msg bufMsg) Size() uint32    { return gbit32(msg[0:4]) }
 func (msg bufMsg) Type() MsgType   { return MsgType(msg[4]) }
@@ -75,19 +68,30 @@ func (msg bufMsg) String() string {
 }
 </code></pre>
 <p>
-<code>gbit32</code>は4バイトのリトルエンディアンの配列を整数に変換するもので、<code>pbit32</code>は逆に整数をリトルエンディアンのスライスに格納するものである。</p>
+<code>gbit32</code>は4バイトのリトルエンディアンの配列を\
+整数に変換するもので、\
+<code>pbit32</code>は逆に整数をリトルエンディアンのスライスに\
+格納するものである。\
+</p>
 <p>
-各メッセージはそれぞれのフィールドを構造体のフィールドとして定義したものである。例えば<code>tversion</code>に対応する構造体は以下の通り。</p>
-<pre><code>type TVersion struct {
+各メッセージはそれぞれのフィールドを構造体のフィールドとして\
+定義したものである。\
+例えば<code>tversion</code>に対応する構造体は以下の通り。\
+</p>
+<pre><code>\
+type TVersion struct {
     Tag     uint16
     Msize   uint32
     Version string
 }
 </code></pre>
 <p>
-バイト列から各メッセージの構造体に変換するために<code>new<i>メッセージタイプ</i></code>を定義した。
+バイト列から各メッセージの構造体に変換するために\
+<code>new<i>メッセージタイプ</i></code>\
+を定義した。
 </p>
-<pre><code>func newTVersion(buf []byte) *TVersion {
+<pre><code>\
+func newTVersion(buf []byte) *TVersion {
     msg := new(TVersion)
     msg.Tag = gbit16(buf[5:7])
     msg.Msize = gbit32(buf[7:11])
@@ -99,9 +103,11 @@ func (msg bufMsg) String() string {
 
 <h2>メッセージのやりとり</h2>
 <p>
-まずは9Pメッセージを読む関数を実装する。バイト列が読めればいいので引数は<code>io.Reader</code>にした:
+まずは9Pメッセージを読む関数を実装する。\
+バイト列が読めればいいので引数は<code>io.Reader</code>にした:
 </p>
-<pre><code>func readMsg(r io.Reader) ([]byte, error) {
+<pre><code>\
+func readMsg(r io.Reader) ([]byte, error) {
 </code></pre>
 <p>
 最初にメッセージのサイズを読む:
@@ -137,8 +143,11 @@ func (msg bufMsg) String() string {
 }
 </code></pre>
 <p>
-読み込んだバイト列は<code>ReadMsg</code>関数でメッセージの構造体に変換する。</p>
-<pre><code>RecvMsg(r io.Reader) (Msg, error) {
+読み込んだバイト列は<code>ReadMsg</code>関数で\
+メッセージの構造体に変換する。\
+</p>
+<pre><code>\
+RecvMsg(r io.Reader) (Msg, error) {
 	b, err := readMsg(r)
 	if err == io.EOF {
 		return nil, err
@@ -149,8 +158,11 @@ func (msg bufMsg) String() string {
 }
 </code></pre>
 <p>
-返信のメッセージはメッセージの構造体を<code>marshal</code>関数でバイト列に変換して<code>io.Writer</code>に書き込む。</p>
-<pre><code>// SendMsg send a 9P message to w
+返信のメッセージはメッセージの構造体を<code>marshal</code>関数\
+でバイト列に変換して<code>io.Writer</code>に書き込む。\
+</p>
+<pre><code>\
+// SendMsg send a 9P message to w
 func SendMsg(msg Msg, w io.Writer) error {
 	if _, err := w.Write(msg.marshal()); err != nil {
 		return fmt.Errorf(&quot;write: %v&quot;, err)
@@ -161,15 +173,33 @@ func SendMsg(msg Msg, w io.Writer) error {
 
 <h2>メインループ</h2>
 <p>
-ライブラリはメッセージを読み込むためのリスナーgoroutinと返信を書き込むためのレスポンダーgoroutine、そして各メッセージを処理するためのgoroutineを立ち上げて、チャネルでそれぞれを繋ぐ。リスナーがメッセージを読み込むと、<code>request</code>構造体に格納し、メッセージのタイプに応じて各goroutineに渡す。渡されたgoroutineはメッセージに応じた処理をし、返信のメッセージをリスポンダーgoroutineに渡す。リスポンダーgoroutineはメッセージをバイト列に変換して返信する。
+ライブラリはメッセージを読み込むためのリスナーgoroutinと\
+返信を書き込むためのレスポンダーgoroutine、\
+そして各メッセージを処理するためのgoroutineを立ち上げて、\
+チャネルでそれぞれを繋ぐ。\
+リスナーがメッセージを読み込むと、<code>request</code>構造体に格納し、\
+メッセージのタイプに応じて各goroutineに渡す。\
+渡されたgoroutineはメッセージに応じた処理をし、\
+返信のメッセージをリスポンダーgoroutineに渡す。\
+リスポンダーgoroutineはメッセージをバイト列に変換して返信する。
 </p>
 <p>
-この設計がいいかどうかよく知らんけど、Go言語を触るからgoroutineとチャネルによるパイプラインを作ってみたかった。</p>
+この設計がいいかどうかよく知らんけど、\
+Go言語を触るからgoroutineとチャネルによるパイプラインを作ってみたかった。\
+</p>
 
 <h2>各メッセージの処理</h2>
 <p>
-メッセージは<code>s<i>メッセージタイプ</i></code>goroutineで処理する。関数は<code>for</code>ループのなかでチャンネル<code>rc</code>から<code>request</code>が届くのを待つ。届いたリクエストには<code>ifcall</code>フィールドにクライアントからの<code>Msg</code>が含まれるので、この関数が担当するstructにキャストする。このキャストが失敗するのは明かなサーバーのバグなのでタイプアサーションはしない。</p>
-<pre><code>func s<i>メッセージタイプ</i>(ctx context.Context, c *conn, rc &lt;-chan *request) {
+メッセージは<code>s<i>メッセージタイプ</i></code>goroutineで処理する。\
+関数は<code>for</code>ループのなかでチャンネル<code>rc</code>から\
+<code>request</code>が届くのを待つ。\
+届いたリクエストには<code>ifcall</code>フィールドにクライアントからの\
+<code>Msg</code>が含まれるので、\
+この関数が担当するstructにキャストする。\
+このキャストが失敗するのは明かなサーバーのバグなのでタイプアサーションはしない。\
+</p>
+<pre><code>\
+func s<i>メッセージタイプ</i>(ctx context.Context, c *conn, rc &lt;-chan *request) {
 	for {
 		select {
 		case &lt;-ctx.Done();
@@ -181,7 +211,9 @@ func SendMsg(msg Msg, w io.Writer) error {
 			ifcall := r.ifcall.(*T<i>メッセージタイプ</i>)
 </code></pre>
 <p>
-各種処理を完了したら、届いた<code>request</code>の<code>ofcall</code>に返信の<code>Msg</code>を格納して返信を担当するgoroutineに送る。<pre><code>			select {
+各種処理を完了したら、届いた<code>request</code>の<code>ofcall</code>に\
+返信の<code>Msg</code>を格納して返信を担当するgoroutineに送る。\
+<pre><code>			select {
 			case c.respChan &lt;- r:
 			case &lt;-ctx.Done():
 				return
@@ -190,9 +222,20 @@ func SendMsg(msg Msg, w io.Writer) error {
 </p>
 <h3>Version</h3>
 <p>
-クライアントから届いたバージョンの提案を見て、頭に"9P2000"があれば返信のバージョンを"9P2000"にする。現在定義されているバージョンは"9P2000"の他、Unix用に拡張した"9P2000.u"、Linux用に拡張した"9P2000.l"がある。基本的な昨日を実装することが目標なので、"9P2000"のみを受け付ける。</p>
+クライアントから届いたバージョンの提案を見て、頭に"9P2000"があれば\
+返信のバージョンを"9P2000"にする。\
+現在定義されているバージョンは"9P2000"の他、\
+Unix用に拡張した"9P2000.u"、Linux用に拡張した"9P2000.l"がある。\
+基本的な昨日を実装することが目標なので、"9P2000"のみを受け付ける。\
+</p>
 <p>
-Versionメッセージではメッセージの最大サイズも決定する。サーバーは予め8Kバイトを最大サイズにしている。クライアントがこれ以上のサイズを提案した場合、8Kにしてもらい、これ以下のサイズを提案した場合、そのサイズでメッセージをやりとりする。8Kバイトという既定値はplan9の実装を参考にした。このサイズである必然性はよく知らない。</p>
+Versionメッセージではメッセージの最大サイズも決定する。\
+サーバーは予め8Kバイトを最大サイズにしている。\
+クライアントがこれ以上のサイズを提案した場合、8Kにしてもらい、\
+これ以下のサイズを提案した場合、そのサイズでメッセージをやりとりする。\
+8Kバイトという既定値はplan9の実装を参考にした。\
+このサイズである必然性はよく知らない。\
+</p>
 <pre><code>			version := ifcall.Version
 			if strings.HasPrefix(version, &quot;9P2000&quot;) {
 				version = &quot;9P2000&quot;
@@ -212,19 +255,24 @@ Versionメッセージではメッセージの最大サイズも決定する。�
 
 <h3>Auth</h3>
 <p>
-サーバーの認証は<code>Server</code>の<code>Auth</code>フィールドに認証のためのやりとりを待ち受ける関数を登録することで有効化できる。このフィールドが<code>nil</code>の場合、認証が必要ない旨のエラーを返す。</p>
+サーバーの認証は<code>Server</code>の<code>Auth</code>フィールドに\
+認証のためのやりとりを待ち受ける関数を登録することで有効化できる。\
+このフィールドが<code>nil</code>の場合、認証が必要ない旨のエラーを返す。\
+</p>
 <pre><code>			if c.s.Auth == nil {
 				r.err = fmt.Errorf(&quot;authentication not required&quot;)
 				goto resp
 			}
 </code></pre>
 <p>
-認証が必要な場合、クライアントから提案された<code>afid</code>をコネクションに登録して、<code>Server.Auth</code>を呼び出す。
+認証が必要な場合、クライアントから提案された<code>afid</code>をコネクションに\
+登録して、<code>Server.Auth</code>を呼び出す。
 </p>
 
 <h3>attach</h3>
 <p>
-サーバーはまず認証が必要な場合認証が済んでいるか確認する。</p>
+サーバーはまず認証が必要な場合認証が済んでいるか確認する。\
+</p>
 <pre><code>			switch {
 			case c.s.Auth == nil &amp;&amp; ifcall.Afid == NOFID:
 			case c.s.Auth == nil &amp;&amp; ifcall.Afid != NOFID:
@@ -251,7 +299,9 @@ Versionメッセージではメッセージの最大サイズも決定する。�
 			}
 </code></pre>
 <p>
-次にクライアントが要求してきたファイルツリーがサーバーにあるかどうか確認し、クライアントが設定した<code>fid</code>にルートディレクトリを紐付ける。</p>
+次にクライアントが要求してきたファイルツリーがサーバーにあるかどうか確認し、\
+クライアントが設定した<code>fid</code>にルートディレクトリを紐付ける。\
+</p>
 <pre><code>			r.fid, err = c.fPool.add(ifcall.Fid)
 			if err != nil {
 				r.err = ErrDupFid
@@ -278,8 +328,14 @@ Versionメッセージではメッセージの最大サイズも決定する。�
 
 <h3>flush</h3>
 <p>
-指定されたリクエストの<code>flush</code>メソッドを呼び出す。<code>flush</code>メソッドはリクエストの<code>done</code>チャンネルを閉じ、リクエストのタグを削除する。処理に時間のかかるものは、リクエストの<code>done</code>チャネルが閉じられたら、その処理を中止する。</p>
-<pre><code>// flush cancels the request by calling r.cancel.
+指定されたリクエストの<code>flush</code>メソッドを呼び出す。\
+<code>flush</code>メソッドはリクエストの<code>done</code>チャンネルを閉じ、\
+リクエストのタグを削除する。\
+処理に時間のかかるものは、リクエストの<code>done</code>チャネルが閉じられたら、\
+その処理を中止する。\
+</p>
+<pre><code>\
+// flush cancels the request by calling r.cancel.
 // It also delete the request from its pool.
 func (r *request) flush() {
 	close(r.done)
@@ -289,7 +345,10 @@ func (r *request) flush() {
 
 <h3>walk</h3>
 <p>
-仕様に書かれている通りの条件を確認した後、ファイルツリーを順番に辿り、得られた<code>Qid</code>を記録してクライアントに返す。</p>
+仕様に書かれている通りの条件を確認した後、\
+ファイルツリーを順番に辿り、得られた<code>Qid</code>を\
+記録してクライアントに返す。\
+</p>
 <pre><code>			wqids = make([]Qid, 0, len(ifcall.Wnames))
 			cwdp = oldFid.path
 			for _, name := range ifcall.Wnames {
@@ -324,12 +383,3 @@ func (r *request) flush() {
 <h3>remove</h3>
 <h3>stat</h3>
 <h3>wstat</h3>
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>

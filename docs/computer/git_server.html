@@ -1,41 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>Gitサーバーの設定 on OpenBSD</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>Gitサーバーの設定 on OpenBSD</h1>
 <time>2024-02-15</time>
 
 <h2>はじめに</h2>
 <p>
-GitHubがMicrosoft傘下になり久しい。MincraftがMicrosoftアカウントなしでは遊べなくなった。このままではGitHubもそのうちMicrosoftアカウントを要求するようになるかもしれない。ということでGitサーバーを自前で持つことにした。</p>
+GitHubがMicrosoft傘下になり久しい。\
+MincraftがMicrosoftアカウントなしでは遊べなくなった。\
+このままではGitHubもそのうちMicrosoftアカウントを要求するように\
+なるかもしれない。\
+ということでGitサーバーを自前で持つことにした。\
+</p>
 <p>
-ところでOpenBSDの開発者がGotという別のgit実装を作成しているので、この記事は近いうちにいらなくなりそう。
+ところでOpenBSDの開発者がGotという別のgit実装を作成しているので、\
+この記事は近いうちにいらなくなりそう。
 </p>
 
 <h2>手順</h2>
 <p>
-以下ではssh接続によるpull/push及び、httpsによるpullを設定の上、stagitというウェブフロントエンドを導入する。
+以下ではssh接続によるpull/push及び、httpsによるpullを設定の上、\
+stagitというウェブフロントエンドを導入する。
 </p>
 
 <h3>概要</h3>
@@ -48,7 +30,9 @@ GitHubがMicrosoft傘下になり久しい。MincraftがMicrosoftアカウント
 
 <h3>ドメインの設定(任意)</h3>
 <p>
-ドメインを設定する。IPアドレスでアクセスできればいいならこの設定はいらない。</p>
+ドメインを設定する。\
+IPアドレスでアクセスできればいいならこの設定はいらない。\
+</p>
 <p>
 今回はgitというサブドメインを登録した:
 </p>
@@ -73,9 +57,12 @@ GitHubがMicrosoft傘下になり久しい。MincraftがMicrosoftアカウント
 
 <h3><code>httpd(8)</code>の設定</h3>
 <p>
-httpsで接続する場合、<code>acme-client(8)</code>を設定する（IPアドレスで接続するなら自己証明書を発行することになる）。まず<code>/etc/acme-client.conf</code>にドメインを追加する:
+httpsで接続する場合、<code>acme-client(8)</code>を設定する\
+（IPアドレスで接続するなら自己証明書を発行することになる）。\
+まず<code>/etc/acme-client.conf</code>にドメインを追加する:
 </p>
-<pre><code>domain git.mtkn.jp {
+<pre><code>\
+domain git.mtkn.jp {
 	domain key "/etc/ssl/private/git.mtkn.jp.key"
 	domain full chain certificate "/etc/ssl/git.mtkn.jp.fullchain.pem"
 	sign with letsencrypt
@@ -83,8 +70,10 @@ httpsで接続する場合、<code>acme-client(8)</code>を設定する（IPア�
 </code></pre>
 
 <p>
-続いて<code>/etc/httpd.conf</code>を設定する。</p>
-<pre><code>server "git.mtkn.jp" {
+続いて<code>/etc/httpd.conf</code>を設定する。\
+</p>
+<pre><code>\
+server "git.mtkn.jp" {
 	listen on * port 80
 	location "/.well-known/acme-challenge/*" {
 		root "/acme"
@@ -125,22 +114,34 @@ server "git.mtkn.jp" {
 }
 </code></pre>
 <p>
-<code>location "/*/git-receive-pack"</code>はpushの設定。今回はhttpsでのpushを受付けないので<code>block</code>する。</p>
-<p>
-<code>location "/*/git-upload-pack"</code>は手元のパソコンから<code>git clone</code>や<code>git pull</code>したときのもの。<code>location "/*/info/refs"</code>は上記を含むアクセスがあったときのもの。ここではCGIを使って<code>git-http-backend</code>を呼んでいるだけである。<code>SCRIPT_FILENAME</code>は<code>httpd(8)</code>のchroot環境でのパスである。必要なファイルは後でこのchroot環境にコピーする。
+<code>location "/*/git-receive-pack"</code>はpushの設定。\
+今回はhttpsでのpushを受付けないので<code>block</code>する。\
 </p>
 <p>
-この後同じURLでフロントエンドをホストしたいので、上記のように必要なURLからのみCGIを実行するようにした。gitのhttpクライアントがどのURLを利用しているのかは[2]に書いていた。</p>
+<code>location "/*/git-upload-pack"</code>は手元のパソコンから\
+<code>git clone</code>や<code>git pull</code>したときのもの。\
+<code>location "/*/info/refs"</code>は上記を含むアクセスがあったときのもの。\
+ここではCGIを使って<code>git-http-backend</code>を呼んでいるだけである。\
+<code>SCRIPT_FILENAME</code>は<code>httpd(8)</code>のchroot環境でのパスである。\
+必要なファイルは後でこのchroot環境にコピーする。
+</p>
+<p>
+この後同じURLでフロントエンドをホストしたいので、上記のように必要なURLからのみ\
+CGIを実行するようにした。\
+gitのhttpクライアントがどのURLを利用しているのかは[2]に書いていた。\
+</p>
 
 
 
 <p>
-httpsが必要ない場合は1つ目の<code>server</code>に各<code>location</code>を書くだけでいい。
+httpsが必要ない場合は1つ目の<code>server</code>に各<code>location</code>を書くだけ\
+でいい。
 </p>
 <p>
 <code>httpd(8)</code>と<code>slowcgi(8)</code>を起動する:
 </p>
-<pre><code># echo httpd_flags= &gt;&gt; /etc/rc.conf.local
+<pre><code>\
+# echo httpd_flags= &gt;&gt; /etc/rc.conf.local
 # echo slowcgi_flags= &gt;&gt; /etc/rc.conf.local
 # rcctl start httpd
 # rcctl enable httpd
@@ -150,28 +151,43 @@ httpsが必要ない場合は1つ目の<code>server</code>に各<code>location</
 <p>
 サーバー証明書の発行:
 </p>
-<pre><code># acme-client -v git.mtkn.jp
+<pre><code>\
+# acme-client -v git.mtkn.jp
 </code></pre>
 <p>
 <code>crontab(1)</code>にサーバー証明書の自動更新を登録:
 </p>
-<pre><code>#minute hour    mday    month   wday    [flags] command
+<pre><code>\
+#minute hour    mday    month   wday    [flags] command
 ~ 2 * * * acme-client git.mtkn.jp && rcctl reload httpd
 </code></pre>
 
 <h3>gitパッケージのインストールとchroot環境の整備</h3>
 <p>
-gitパッケージをインストールし、ssh接続用のユーザーを作成する。httpsでも公開するので、gitユーザーのホームディレクトリは<code>/var/www</code>下にする:
+gitパッケージをインストールし、ssh接続用のユーザーを作成する。\
+httpsでも公開するので、gitユーザーのホームディレクトリは<code>/var/www</code>\
+下にする:
 </p>
-<pre><code># pkg_add git
+<pre><code>\
+# pkg_add git
 # useradd -b /var/www -m -s /usr/local/bin/git-shell git
 </code></pre>
 <p>
-ssh接続用の公開鍵を<code>/var/www/git/.ssh/authorized_keys</code>に登録する。ところでこのファイルに公開鍵を書き込むとgitユーザーとしてsshでログインできるので、部外者がこのファイルの編集をできないようにしておく必要がある。一応所有者は<code>git:git</code>、権限は<code>-rw-------</code>なので大丈夫だと思うが、心配なら<code>httpd(8)</code>のchroot環境の外にこのファイルを移動させておいてもいいかもしれない。</p>
-<p>
-httpsでアクセスするためにchroot環境を整備する。<code>httpd(8)</code>は既定では<code>/var/www</code>にchrootして実行されるので、CGIに必要なファイルをこのディレクトリ以下に用意する必要がある。まずはgitのコマンドをコピー:
+ssh接続用の公開鍵を<code>/var/www/git/.ssh/authorized_keys</code>に登録する。\
+ところでこのファイルに公開鍵を書き込むとgitユーザーとしてsshでログインできるので、\
+部外者がこのファイルの編集をできないようにしておく必要がある。\
+一応所有者は<code>git:git</code>、権限は<code>-rw-------</code>なので大丈夫\
+だと思うが、心配なら<code>httpd(8)</code>のchroot環境の外にこのファイルを移動させて\
+おいてもいいかもしれない。\
 </p>
-<pre><code># mkdir -p /var/www/usr/local/libexec/git
+<p>
+httpsでアクセスするためにchroot環境を整備する。\
+<code>httpd(8)</code>は既定では<code>/var/www</code>にchrootして実行されるので、\
+CGIに必要なファイルをこのディレクトリ以下に用意する必要がある。\
+まずはgitのコマンドをコピー:
+</p>
+<pre><code>\
+# mkdir -p /var/www/usr/local/libexec/git
 # cp /usr/local/libexec/git/git-{http-backend,receive-pack,upload-pack} /var/www/usr/local/libexec/git/
 # chown www:www /var/www/usr/local/libexec/git/git-{http-backend,receive-pack,upload-pack}
 # chmod 0500 /var/www/usr/local/libexec/git/git-{http-backend,receive-pack,upload-pack}
@@ -183,23 +199,29 @@ httpsでアクセスするためにchroot環境を整備する。<code>httpd(8)<
 <p>
 続いてコマンドの実行に必要なライブラリをコピー:
 </p>
-<pre><code># mkdir -p /var/www/usr/lib /var/www/usr/local/lib /var/www/usr/libexec
+<pre><code>\
+# mkdir -p /var/www/usr/lib /var/www/usr/local/lib /var/www/usr/libexec
 # find /var/www/{bin,usr} -type f | grep git | xargs ldd | awk '{print $7}' | grep -v -e '^/var/www/' -e '^$' -e 'Name' | sort | uniq | awk '{printf &quot;cp %s /var/www%s &amp;&amp; chown www:www /var/www%s &amp;&amp; chmod 0400 /var/www%s\n&quot;, $1, $1, $1, $1}' | sh -s
 </code></pre>
 <p>
 <code>/dev/null</code>をコピーする(<code>mknod(8)</code>参照):
 </p>
-<pre><code># mkdir /var/www/dev
+<pre><code>\
+# mkdir /var/www/dev
 # mknod -m 666 /var/www/dev/null c 2 2
 </code></pre>
 <p>
-最後に、<code>/var/www/dev/null</code>を作成するために<code>/etc/fstab</code>の<code>/var</code>エントリーから<code>nodev</code>オプションを削除し、再起動する。
+最後に、<code>/var/www/dev/null</code>を作成するために\
+<code>/etc/fstab</code>の<code>/var</code>エントリーから\
+<code>nodev</code>オプションを削除し、再起動する。
 </p>
 
 <p>
-gitパッケージやシステムの更新後、chroot環境のコマンドやライブラリも更新しないといけないのでそのためのスクリプトを適当に作った:
+gitパッケージやシステムの更新後、chroot環境のコマンドやライブラリも\
+更新しないといけないのでそのためのスクリプトを適当に作った:
 </p>
-<pre><code>#!/bin/sh -xe
+<pre><code>\
+#!/bin/sh -xe
 
 oso=$(find /var/www/usr -type f -name '*.so*')
 rm $oso
@@ -226,10 +248,14 @@ echo &quot;$nso&quot; | sed 's|.*|chmod 0400 /var/www&amp;|' | sh -s
 <p>
 ウェブフロントエンドとしてstagitを導入する:
 </p>
-<pre><code># pkg_add stagit
+<pre><code>\
+# pkg_add stagit
 </code></pre>
 <p>
-<code>httpd.conf(5)</code>の<code>server "git.mtkn.jp"</code>の中に以下の設定を追加する（<code>location</code>のマッチは上から順番に評価されるので、上で設定したgitのhttpクライアント用の<code>location</code>よりも下に記入する）:
+<code>httpd.conf(5)</code>の<code>server "git.mtkn.jp"</code>の中に\
+以下の設定を追加する\
+（<code>location</code>のマッチは上から順番に評価されるので、上で設定した\
+gitのhttpクライアント用の<code>location</code>よりも下に記入する）:
 </p>
 <pre><code>	location &quot;/&quot; {
 		directory index index.html
@@ -243,15 +269,20 @@ echo &quot;$nso&quot; | sed 's|.*|chmod 0400 /var/www&amp;|' | sh -s
 <p>
 stagit用のディレクトリを作成して<code>httpd(8)</code>を再読込する:
 </p>
-<pre><code># mkdir /var/www/htdocs/git.mtkn.jp
+<pre><code>\
+# mkdir /var/www/htdocs/git.mtkn.jp
 # chown git:git /var/www/htdocs/git.mtkn.jp
 # rcctl reload httpd
 </code></pre>
 
 <p>
-gitリポジトリが更新されたときにウェブページも更新するように設定する。gitリポジトリはなにか更新があった場合、そのリポジトリのディレクトリの中の<code>hooks/post-receive</code>というファイルを自動で実行する。そのためこのファイルに、stagitの更新をするスクリプトを書いておけばいい:
+gitリポジトリが更新されたときにウェブページも更新するように設定する。\
+gitリポジトリはなにか更新があった場合、そのリポジトリのディレクトリの中の\
+<code>hooks/post-receive</code>というファイルを自動で実行する。\
+そのためこのファイルに、stagitの更新をするスクリプトを書いておけばいい:
 </p>
-<pre><code>#!/bin/sh
+<pre><code>\
+#!/bin/sh
 
 git_root=&quot;/var/www/git&quot;
 stagit_root=&quot;/var/www/htdocs/git.mtkn.jp&quot;
@@ -266,8 +297,10 @@ mkdir -p &quot;$stagit_dst&quot;
 
 <h2>レポジトリの作成</h2>
 <p>
-レポジトリを作成するにはサーバーで以下のようにする。</p>
-<pre><code>$ cd /var/www/git
+レポジトリを作成するにはサーバーで以下のようにする。\
+</p>
+<pre><code>\
+$ cd /var/www/git
 $ doas -u git mkdir <i>repo</i>.git
 $ cd <i>repo</i>.git
 $ doas -u git git init --bare
@@ -276,12 +309,14 @@ $ doas -u git git init --bare
 <p>
 これで手元のパソコンからクローンできる:
 </p>
-<pre><code>$ git clone git@git.mtkn.jp:<i>repo</i>.git
+<pre><code>\
+$ git clone git@git.mtkn.jp:<i>repo</i>.git
 </code></pre>
 <p>
 または
 </p>
-<pre><code>$ git clone https://git.mtkn.jp/<i>repo</i>.git
+<pre><code>\
+$ git clone https://git.mtkn.jp/<i>repo</i>.git
 </code></pre>
 
 <h2>参考</h2>
@@ -290,12 +325,3 @@ $ doas -u git git init --bare
 <li>[2] <a href="https://git-scm.com/docs/http-protocol">Git - http-protocol Documentation.Git</a></li>
 <li>[3] <a href="https://codemadness.org/stagit.html">Stagit: a static git page generator - Codemadness</a></li>
 </ul>
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>

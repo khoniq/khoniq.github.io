@@ -1,28 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>Xlibで遊んでみる6</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>Xlibで遊んでみる6</h1>
 <time>2023-01-25</time>
 
@@ -31,12 +6,15 @@
 </p>
 <p>
 言語: C言語<br />
-ソースコード: <a href="https://git.mtkn.jp/xlib_playground">git</a>
+ソースコード: \
+<a href="https://git.mtkn.jp/xlib_playground">git</a>
 </p>
 
 <h2>ワールドマップの作成</h2>
 <p>
-ゲームのワールドマップを作製した。ここでは文字列として登録した。なにもないところは「<code>.</code>」、ブロックの場所は「<code>b</code>」、プレーヤーは「<code>p</code>」とした:
+ゲームのワールドマップを作製した。\
+ここでは文字列として登録した。なにもないところは「<code>.</code>」、ブロック\
+の場所は「<code>b</code>」、プレーヤーは「<code>p</code>」とした:
 </p>
 <pre><code>char worldmap[WORLD_WIDTH * WORLD_HEIGHT + 1] =
 "................................................................................"
@@ -102,7 +80,9 @@
 </code></pre>
 
 <h2>プレイヤーの作成</h2>
-<p>プレイヤーには重力をかけたいので、まずは四角形に加速度を追加:</p>
+<p>\
+プレイヤーには重力をかけたいので、まずは四角形に加速度を追加:\
+</p>
 <pre><code>struct rect {
 	float ppx, ppy;
 	float px, py;
@@ -112,7 +92,9 @@
 	int m;
 };
 </code></pre>
-<p>ワールドマップを読み込み、その際にプレイヤーに重力を付加:</p>
+<p>\
+ワールドマップを読み込み、その際にプレイヤーに重力を付加:\
+</p>
 <pre><code>struct rect   block[NUM_RECT];
 struct rect   player;
 
@@ -143,7 +125,10 @@ struct rect   player;
 	}
 </code></pre>
 
-<p>ユーザーからの入力を受けとり、プレイーヤの加速度等を変更。<code>A</code>、<code>D</code>でそれぞれ左右に加速し、地面に接しているときに<code>space</code>キーでジャンプさせる:
+<p>\
+ユーザーからの入力を受けとり、プレイーヤの加速度等を変更。\
+<code>A</code>、<code>D</code>でそれぞれ左右に加速し、\
+地面に接しているときに<code>space</code>キーでジャンプさせる:
 </p>
 <pre><code>void
 handle_inputs(int key_state[])
@@ -178,7 +163,10 @@ handle_inputs(int key_state[])
 }
 </code></pre>
 
-<p>変更した加速度は<code>rect_next_tick()</code>関数で次の位置を計算するのに使用。また画面の下に落ちた時にゲームオーバーになるように設定:</p>
+<p>\
+変更した加速度は<code>rect_next_tick()</code>関数で次の位置を計算\
+するのに使用。また画面の下に落ちた時にゲームオーバーになるように設定:\
+</p>
 <pre><code>void
 rect_next_tick(struct rect *s, long ndt) // nano second
 {
@@ -219,12 +207,3 @@ rect_next_tick(struct rect *s, long ndt) // nano second
 <ul>
 <li><a href="https://tronche.com/gui/x/xlib/">The Xlib Manual(html conversion)</a></li>
 </ul>
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>

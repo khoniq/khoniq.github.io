@@ -1,28 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>Xlibで遊んでみる5</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>Xlibで遊んでみる5</h1>
 <time>2023-01-03</time>
 
@@ -31,14 +6,18 @@
 </p>
 <p>
 言語: C言語<br />
-ソースコード: <a href="https://git.mtkn.jp/xlib_playground">git</a>
+ソースコード: \
+<a href="https://git.mtkn.jp/xlib_playground">git</a>
 </p>
 
 <h2>円の衝突判定とその処理</h2>
 <p>
-前回四角形で行っていた衝突判定とその処理を今回は円でした。衝突の判定は二つの円の中心間の距離と、各円の半径の和を比較するだけなので簡単である:
+前回四角形で行っていた衝突判定とその処理を今回は円でした。\
+衝突の判定は二つの円の中心間の距離と、各円の半径の和を比較するだけなので\
+簡単である:
 </p>
-<pre><code>struct circle {
+<pre><code>\
+struct circle {
 	float ppx, ppy;  // previous position (center)
 	float px, py;    // current position (center)
 	float vx, vy;    // velocity
@@ -56,7 +35,8 @@ circle_test_collision(struct circle *c1, struct circle *c2)
 </code></pre>
 
 <p>
-衝突後は前回と同じく弾性衝突として処理した。四角形とは違い、衝突方向の場合分けが不要なので楽である。
+衝突後は前回と同じく弾性衝突として処理した。\
+四角形とは違い、衝突方向の場合分けが不要なので楽である。
 </p>
 <pre><code>
 void
@@ -131,14 +111,6 @@ circle_handle_collision_elastic(struct circle *c1, struct circle *c2)
 <li><a href="https://tronche.com/gui/x/xlib/">The Xlib Manual(html conversion)</a></li>
 </ul>
 <p>
-次の記事: <a href="xlib_playground6.html">Xlibで遊んでみる6</a>
+次の記事: \
+<a href="xlib_playground6.html">Xlibで遊んでみる6</a>
 </p>
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>

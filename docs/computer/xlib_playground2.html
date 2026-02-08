@@ -1,41 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>Xlibで遊んでみる2</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>Xlibで遊んでみる2</h1>
 <time>2022-12-22</time>
 
 <p>前回: <a href="xlib_playground1.html">Xlibで遊んでみる1</a></p>
-<p>言語はC言語である。ソースコードは<a href="https://git.mtkn.jp/xlib_playground">ここ</a>にある。
+<p>言語はC言語である。ソースコードは\
+<a href="https://git.mtkn.jp/xlib_playground">ここ</a>にある。
 </p>
 
 <h2>FPSの固定</h2>
-<p>前のフレームからの経過時間を計測して<code>1.0/FPS</code>を越えるまで待機させる。このときに<code>nanosleep()</code>を使うとなぜか上手くいかなかった。ナノ秒単位で処理できそうな名前なのに使えない。多分OSのコンテクストスイッチがどうとかいう話やと思う。知らんけど。組み込みとかで使うんかな？
+<p>前のフレームからの経過時間を計測して<code>1.0/FPS</code>を越えるまで待機させる。\
+このときに<code>nanosleep()</code>を使うとなぜか上手くいかなかった。\
+ナノ秒単位で処理できそうな名前なのに使えない。\
+多分OSのコンテクストスイッチがどうとかいう話やと思う。\
+知らんけど。\
+組み込みとかで使うんかな？
 </p>
 
 <p>
-とりあえず<code>while</code>ループの中でひたすら時刻を読んでいる。リソースの無駄遣いではないのだろうか:
+とりあえず<code>while</code>ループの中で\
+ひたすら時刻を読んでいる。\
+リソースの無駄遣いではないのだろうか:
 </p>
 <pre><code>#defin FPS 60
 
@@ -68,21 +51,33 @@ main(void)
 }
 </code></pre>
 <p>
-時刻は<code>clock_gettime()</code>で測定して1秒未満の部分: <code>tv_nsec</code>だけを利用している。<code>tv_nsec</code>はナノ秒ナノで、10<sup>9</sup>を掛けている。<code>dt = t1 > t0 ? t1 - t0 : t1 - t0 + 1000 * 1000 * 1000</code>で前回の時刻と現在の時刻の少数部分を比較している。繰り上がりがあれば前回の時刻よりも現在の時刻の方が小さくなるので1秒足すことで調整している。</p>
+時刻は<code>clock_gettime()</code>で測定して1秒未満の部分: <code>tv_nsec</code>\
+だけを利用している。<code>tv_nsec</code>はナノ秒ナノで、10<sup>9</sup>を掛けている。\
+<code>dt = t1 > t0 ? t1 - t0 : t1 - t0 + 1000 * 1000 * 1000</code>で前回の\
+時刻と現在の時刻の少数部分を比較している。繰り上がりがあれば前回の時刻よりも\
+現在の時刻の方が小さくなるので1秒足すことで調整している。\
+</p>
 <p>
-FPSの計測の部分は、フレーム毎に<code>fps_count</code>を1ずつ増やし、ナノ秒が繰り上がった時点での<code>fps_count</code>を表示している。</p>
+FPSの計測の部分は、フレーム毎に<code>fps_count</code>を1ずつ増やし、\
+ナノ秒が繰り上がった時点での<code>fps_count</code>を表示している。\
+</p>
 <p>
-あまり正確な方法ではないように思うが、コンパクトにまとまったのではないだろうか。</p>
+あまり正確な方法ではないように思うが、コンパクトにまとまったのではないだろうか。\
+</p>
 
 <h2>キーボード入力の処理</h2>
 <p>キーボードからの入力を受け取る:</p>
 <pre><code>XSelectInput(display, window,
     ExposureMask|KeyPressMask|KeyReleaseMask);
 </code></pre>
-<p>ここではキーボードのキーを押した時と離した時に<code>XEvent</code>の通知を受け取るように設定した。
+<p>ここではキーボードのキーを押した時と離した時に<code>XEvent</code>の通知を\
+受け取るように設定した。
 </p>
 <p>
-<code>XNextEvent()</code>からひとつずつ入力を受け取ると、複数のキーが同時に押された時にうまく処理できなかったので、押されているキーを配列に保存しておくことにした:</p>
+<code>XNextEvent()</code>からひとつずつ入力を受け取ると、\
+複数のキーが同時に押された時にうまく処理できなかったので、\
+押されているキーを配列に保存しておくことにした:\
+</p>
 <pre><code>enum Keys {
 	Key_D,
 	Key_S,
@@ -100,7 +95,13 @@ int key_state[Num_Key];
 </code></pre>
 
 <p>
-入力の処理は<code>handle_inputs()</code>関数内で行なう。<code>A</code>、<code>S</code>、<code>D</code>、<code>W</code>のうちどれかのキーが押されているとそれぞれ左、下、右、上方向に速度を加算するようにした。また、<code>Q</code>が押されるか、windowが破壊されると<code>quit</code>フラグを<code>1</code>にしてメインループから抜けるようにしている:</p>
+入力の処理は<code>handle_inputs()</code>関数内で行なう。\
+<code>A</code>、<code>S</code>、<code>D</code>、<code>W</code>\
+のうちどれかのキーが押されているとそれぞれ左、下、右、上方向に\
+速度を加算するようにした。また、<code>Q</code>が押されるか、\
+windowが破壊されると<code>quit</code>フラグを<code>1</code>にして\
+メインループから抜けるようにしている:\
+</p>
 <pre><code>int   quit;
 
 void
@@ -173,7 +174,8 @@ handle_inputs(void)
 </code></pre>
 
 <p>
-入力によって変更された速度は、<code>main()</code>関数内で次の座標を計算するために使用される:
+入力によって変更された速度は、<code>main()</code>関数内で次の座標を\
+計算するために使用される:
 </p>
 <pre><code>float px = 200, py = 200;
 float vx = 0, vy = 0;
@@ -222,14 +224,6 @@ main(void)
 <ul>
 <li><a href="https://tronche.com/gui/x/xlib/">The Xlib Manual(html conversion)</a></li>
 </ul>
-<p>次の記事: <a href="xlib_playground3.html">Xlibで遊んでみる3</a>
+<p>次の記事: \
+<a href="xlib_playground3.html">Xlibで遊んでみる3</a>
 </p>
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>

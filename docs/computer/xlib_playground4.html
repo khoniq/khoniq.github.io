@@ -1,28 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
-	<title>Xlibで遊んでみる4</title>
-</head>
-<body>
-	<header>
-		<a href="/">主頁</a> |
-		<a href="/about.html">自己紹介</a> |
-		<a href="/journal">日記</a> |
-		<a href="/farm">農業</a> |
-		<a href="/kitchen">台所</a> |
-		<a href="/computer">電算機</a> |
-		<a href="/poetry">詩</a> |
-		<a href="/books">本棚</a> |
-		<a href="/gallery">絵</a> |
-		<a href="/plant">植物</a> |
-		<a href="https://git.mtkn.jp">Git</a>
-	</header>
-	<main>
-		<article>
 <h1>Xlibで遊んでみる4</h1>
 <time>2023-01-02</time>
 
@@ -31,16 +6,22 @@
 </p>
 <p>
 言語: C言語<br />
-ソースコード: <a href="https://git.mtkn.jp/xlib_playground">git</a>
+ソースコード: \
+<a href="https://git.mtkn.jp/xlib_playground">git</a>
 </p>
 
 <h2>衝突判定とその処理</h2>
 <p>
-これまでは一つの四角形だけを描画していたが、今回は複数の四角形を作成して動かしてみた。ランダムな場所にランダムな運動量で動かして、他のものやウィンドウの縁とぶつかったら跳ね返るようにした。</p>
-<p>
-回転しない四角形どうしの衝突判定は簡単である。x軸方向とy軸方向の両方に重なりがあれば衝突している:
+これまでは一つの四角形だけを描画していたが、今回は複数の四角形を作成\
+して動かしてみた。ランダムな場所にランダムな運動量で動かして、\
+他のものやウィンドウの縁とぶつかったら跳ね返るようにした。\
 </p>
-<pre><code>struct square {
+<p>
+回転しない四角形どうしの衝突判定は簡単である。x軸方向とy軸方向の\
+両方に重なりがあれば衝突している:
+</p>
+<pre><code>\
+struct square {
 	float ppx, ppy; // previous position
 	float px, py;   // current position
 	float vx, vy;   // velocity
@@ -56,9 +37,16 @@ test_collision(struct square *s1, struct square* s2)
 </code></pre>
 
 <p>
-衝突後の処理は多少めんどくさかった。衝突した時は既にめりこんでいるので、まずはそれぞれをめりこんだ距離の半分ずつずらして衝突を解消するようにした。この際、x軸方向にぶつかったのか、y軸方向にぶつかったのかで、それぞれの軸方向にひっぺがすようにしている。二つの四角形の各軸に関するめりこんだ距離<code>lapx</code>、<code>lapy</code>と各軸に関する相対速度<code>rel_vx</code>、<code>rel_vy</code>の比を比べればどちらの軸方向にぶつかったかが分かるはずである、多分 :
+衝突後の処理は多少めんどくさかった。\
+衝突した時は既にめりこんでいるので、まずはそれぞれをめりこんだ距離の半分\
+ずつずらして衝突を解消するようにした。この際、x軸方向にぶつかったのか、\
+y軸方向にぶつかったのかで、それぞれの軸方向にひっぺがすようにしている。\
+二つの四角形の各軸に関するめりこんだ距離<code>lapx</code>、<code>lapy</code>\
+と各軸に関する相対速度<code>rel_vx</code>、<code>rel_vy</code>の比を比べれば\
+どちらの軸方向にぶつかったかが分かるはずである、多分 :
 </p>
-<pre><code>void
+<pre><code>\
+void
 handle_collision_mm(struct square *s1, struct square *s2)
 {
 	if (!test_collision(s1, s2))
@@ -89,9 +77,12 @@ handle_collision_mm(struct square *s1, struct square *s2)
 }
 </code></pre>
 <p>
-衝突は弾性衝突として、衝突したそれぞれの四角形の速度を更新した。質量は四角形の面積として計算している。衝突後の速度はエネルギー保存則と運動量保存則から導いたのでしんどかった。
+衝突は弾性衝突として、衝突したそれぞれの四角形の速度を\
+更新した。質量は四角形の面積として計算している。\
+衝突後の速度はエネルギー保存則と運動量保存則から導いたのでしんどかった。
 </p>
-<pre><code>void
+<pre><code>\
+void
 handle_collision_elastic(struct square *s1, struct square *s2)
 {
 	if(!test_collision(s1, s2))
@@ -122,9 +113,12 @@ handle_collision_elastic(struct square *s1, struct square *s2)
 
 <h2>サブティック</h2>
 <p>
-この名前が適切かどうか分からないが、前のフレームから次のフレームまでの時間をさらに何等分かして衝突判定の制度を上げた（マクロは括弧でかこって分かりにくいバグを防げとどこかに書いていたのでそうすることにした）:
+この名前が適切かどうか分からないが、前のフレームから次のフレームまで\
+の時間をさらに何等分かして衝突判定の制度を上げた（マクロは括弧でかこって\
+分かりにくいバグを防げとどこかに書いていたのでそうすることにした）:
 </p>
-<pre><code>#define SUB_TIC (4)
+<pre><code>\
+#define SUB_TIC (4)
 
 void
 game_play(void)
@@ -164,14 +158,6 @@ game_play(void)
 <li><a href="https://tronche.com/gui/x/xlib/">The Xlib Manual(html conversion)</a></li>
 </ul>
 <p>
-次の記事: <a href="xlib_playground5.html">Xlibで遊んでみる5</a>
+次の記事: \
+<a href="xlib_playground5.html">Xlibで遊んでみる5</a>
 </p>
-		</article>
-
-	</main>
-	<footer>
-		<address>info(at)mtkn(dot)jp</address>
-		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
-	</footer>
-</body>
-</html>
