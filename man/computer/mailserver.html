@@ -1,0 +1,701 @@
+<h1>メールサーバー構築 on OpenBSD with OpenSMTPD and Dovecot</h1>
+<time>2024-01-19</time><br>
+<time>2025-11-03</time> <code>HELO</code>コマンドで表示されるドメイン名を変更<br>
+
+<h2>はじめに</h2>
+<p>
+少し前にさくらのVPSで独自ドメインのメールサーバーを構築した。\
+当時はドキュメントを追うのに必死で構築手順を整理できていなかった。\
+しかしスマホを使わない僕の数少い連絡手段なので、受信できなくなると困る。\
+そこであらためてサーバーを構築し、その手順を確認することにした。\
+あいかわらずDNSの知識は自信がない。\
+セキュリティは自己責任で。\
+</p>
+
+<h2>使うもの</h2>
+<ul>
+<li>VPS: さくらのVPS (IPアドレスを<i>sss.sss.sss.sss</i>とする)</li>
+<li>OS: OpenBSD 7.4</li>
+<li>ドメイン: ムームードメイン (mtkn.jpとする)</li>
+<li>SMTPサーバー(MTA): OpenSMTPD 7.4.0</li>
+<li>IMAPサーバー(MDA): Dovecot 2.3.20</li>
+</ul>
+
+<h2>メールの仕組み</h2>
+<p>
+メールの送受信にはSMTPというプロトコルが使われ、この通信を担うのが\
+SMTPサーバーと呼ばれるソフトウェアである。\
+このサーバーはメールの転送を担うので、MTA(Mail Transfer Agent)とも\
+呼ばれる。\
+今回はMTAとしてOpenSMTPDというのを使う。\
+手元のパソコン等で書いたメールは、SMTPの通信で送信側のMTAに送られ、\
+そこから受信側のMTAに転送される。\
+受信側のMTAでは届いたメールをユーザーごとにふりわけ、所定の場所\
+に保存する。\
+</p>
+<p>
+受信側のユーザーは、手元のパソコン等から受信側のサーバーに繋ぎ、\
+自分宛てのメールを確認する。\
+この時に使われるのがIMAPというプロトコルである\
+(POPというのもあるが今回は割愛)。\
+IMAPによるこの通信を担うのがIMAPサーバーで、メールを配達する\
+役割を担うことから、MDA(Mail Delivery Agent)とも呼ばれる。\
+今回MDAとしてDovecotを使用する。\
+</p>
+<p>
+以上をまとめると以下のようになる:
+</p>
+<pre>
++------------+        +----------------+
+|MTA(mtkn.jp)|--SMTP-&gt;|      MTA       |
++------------+        +--example.com---+
+      ^               |      MDA       |
+      |               +----------------+
+      |                       |
+     SMTP                    IMAP
+      |                       |
+      |                       v
++------------+        +----------------+
+|user@mtkn.jp|        |user@example.com|
++------------+        +----------------+
+
+</pre>
+<ol>
+<li>メールを書く。</li>
+<li>送信側のMTAに送る。</li>
+<li>受信側のMTAに転送する。</li>
+<li>受信者が受信側のMDAに新着メールの有無を確認する。</li>
+</ol>
+
+<p>
+SMTPサーバーどうしが通信する際、スパムメールをフィルタリングする為、\
+いくつかの方法で送信元の本人確認を行う。\
+その際第三者としてDNS及び、サーバーのIPアドレスを管理している人\
+(今回の場合はさくらインターネット)が登場する。\
+DNSにはドメインをIPアドレスにひもづける情報が登録できる。\
+またIPアドレスの管理人には、自分が借りているIPアドレスを\
+自分のドメインにひもづける情報を登録してもらう。\
+これらによって、メールの送信者がドメイン、IPアドレス双方から\
+確認できるので、なりすましを防止できる仕組みである。\
+</p>
+
+<p>
+最近はgmail等の大手がスパム対策を強化する一環として、\
+以下に述べるような本人確認をすべて通らなければ受信しない\
+ようにしているらしい。\
+</p>
+
+<h2>MTAどうしのやりとり</h2>
+<p>
+以下、MTAどうしの通信内容をざっくり説明する。
+</p>
+
+<h3>Aレコード、MXレコードによる送信先の特定</h3>
+<p>
+MTAがメールを送信する際、まずは宛先のサーバーを\
+特定する必要がある。\
+この際に使用するのがDNSに登録されているMXレコードである。\
+送信元のMTAはまずDNSに宛先のドメインのMXレコード\
+を問い合わせる。\
+するとメールの送信先のドメイン名が分かるので、続いて\
+この送信先のIPアドレスを問い合わせる:\
+</p>
+<pre>
+MTA (mtkn.jp <i>sss.sss.sss.sss</i>)                 DNS
+
+    example.com宛のメールって
+    誰に送ったらええん？
+    ----------------------------------------&gt;
+
+                 mai.example.comやで(MXレコード)
+    &lt;----------------------------------------
+
+    mail.example.comってどこや?
+    ----------------------------------------&gt;
+
+               <i>ddd.ddd.ddd.ddd</i>やで(Aレコード)
+    &lt;----------------------------------------
+</pre>
+<p>
+次にこの宛先のMTAとの通信を開始する。\
+しかし受信側のMTA(example.com)は、\
+mtkn.jpを名乗るサーバーが本当にmtkn.jpかどうか確認する必要がある:\
+</p>
+<pre>
+MTA (mtkn.jp <i>sss.sss.sss.sss</i>)                 MTA (example.com <i>ddd.ddd.ddd.ddd</i>)
+    こんちは。mtkn.jpです。
+    ----------------------------------------&gt;
+
+                  なりすましちゃうか確認したろ
+</pre>
+
+<h3>SPFレコードによる送信元の本人確認</h3>
+<p>
+受信側のMTAは、自分に連絡してきたサーバーが本人かどうかをDNSに問い合わせる。\
+このときに使うのがSPFレコードである。\
+このレコードにはドメインの所有者が、自分のドメインからメールを送信してもいい\
+IPアドレスを指定する。\
+受信側のMTAは送信元のIPアドレスと、このレコードに\
+記載されているIPアドレスを比べることで、送信側のMTAがドメインの所有者\
+に認められているMTAかどうか判断できる。\
+</p>
+<pre>
+DNS                                          MTA (example.com <i>ddd.ddd.ddd.ddd</i>)
+                 mtkn.jpを名乗るやつから連絡
+                 来てるんやけどこいつ本物？
+    &lt;----------------------------------------
+
+    IPアドレスが<i>sss.sss.sss.sss</i>
+    やったら多分本物やわ。(SPFレコード)
+    ----------------------------------------&gt;
+
+                                     よっしゃ
+</pre>
+
+<h3>PTRレコード</h3>
+<p>
+次は逆にIPアドレスからドメインを辿って本人確認する。\
+これに使われるのがPTRレコードである。\
+このレコードはIPアドレスの管理人(ここではさくらインターネット)\
+でないと登録できない。\
+しかし、IPアドレスを借りるにあたって、自分の名前やら住所やらを\
+提供しており、PTRレコードをきちんと設定した上でスパムメールを\
+送ると、自分の身元がバレるので、スパムの抑止に繋がる。\
+</p>
+<pre>
+DNS                                          MTA (example.com <i>ddd.ddd.ddd.ddd</i>)
+	    <i>sss.sss.sss.sss</i>ってIPアドレスで
+            mtkn.jpってドメイン登録されてる？
+    &lt;----------------------------------------
+
+    されてるで。(PTRレコード)
+    ----------------------------------------&gt;
+
+                                     よっしゃ
+</pre>
+
+<h3>DKIM</h3>
+<p>
+送信側MTAが本人であることを証明するため、受信側に送るメールに署名する。\
+署名は公開鍵方式で行うが、この鍵をドメインキーというようである。\
+この署名が付いたメールをDKIM(DomainKey Identified Mail)という。\
+送信側はあらかじめDNSにドメインキーの公開鍵を登録しておき、\
+メール送信時に秘密鍵で署名する:\
+</p>
+<pre>
+MTA (mtkn.jp <i>sss.sss.sss.sss</i>)                 MTA (example.com <i>ddd.ddd.ddd.ddd</i>)
+
+                        本人確認できたわ
+                        おまたせ。
+    &lt;----------------------------------------
+
+    userさんにメール送るで。
+    署名も付けるで。
+    ----------------------------------------&gt;
+</pre>
+<p>
+受信側はDNSから送信側のドメイン鍵の公開鍵をダウンロードし、署名を確認する:\
+</p>
+<pre>
+DNS                                          MTA (example.com <i>ddd.ddd.ddd.ddd</i>)
+                 mtkn.jpが署名付きでメール
+                 くれたんやけどこの署名本物？
+    &lt;----------------------------------------
+
+    これで確認してみて(DKIM公開鍵)
+    ----------------------------------------&gt;
+
+                                     よっしゃ
+</pre>
+
+<h3>DMARCレコード(上記の本人確認で詐欺だと発覚した場合)</h3>
+<p>
+この他DNSにはDMARCレコードというものを登録することができる。\
+これは、以上の本人確認により送信側がにせものであることが確認できた際、\
+受信側にどのような行動を取ってほしいかを記述するものである。\
+これにより例えば、自分を名乗る詐欺師がどこかにメールを送信した場合、\
+受信したサーバーから自分宛てに通報するように頼める\
+(この頼みが聞き入れられるかどうかは多分受信側MTAによる)。
+</p>
+<pre>
+DNS                                          MTA (example.com <i>ddd.ddd.ddd.ddd</i>)
+               mtkn.jpを名乗る詐欺師から
+               メールきたんやけどどないしょ？
+    &lt;----------------------------------------
+
+    ここ(postmaster@mtkn.jp)に通報や。
+    (DMARCレコード)
+    ----------------------------------------&gt;
+
+                                     よっしゃ
+</pre>
+
+<h2>サーバーの設定</h2>
+<h3>VPSの契約、ドメインの取得</h3>
+<p>
+VPSとドメインを契約する。\
+今回はVPSをさくらインターネットで、\
+ドメインをムームードメインでそれぞれ契約した。\
+さくらのVPSは好きなISOからOSをインストールでき、管理画面も分かりやすい\
+(他のVPSを知らないので比較はできないが)。\
+ムームードメインは安い。管理画面も悪くはない。\
+以前お名前.comでも借りたことがあるが、こちらは広告のメールが\
+やたら届いてうっとうしかった記憶がある。\
+</p>
+
+<h3>OpenBSDのインストール</h3>
+<p>
+さくらのVPSにOpenBSDをインストールする。\
+さくらインターネットが用意したISOがあるので、\
+OS再インストールの画面からそれを選べばすぐにインストールきる。\
+でもなんとなく気持悪いのでopenbsd.orgから本家をダウンロードした。\
+</p>
+<p>
+インストールのこまかい手順は割愛するが、\
+ひとつだけひっかかった点があるので書いておく。\
+インストール先のディスクをセットアップし、OSに必要なファイルを\
+インストールメディアからディスクにコピーすると以下のエラーがでて\
+カーネルパニックになった:
+</p>
+<pre><code>\
+wdc_atapi_start: not ready, st = 50
+fatal protection fault in supervisor mode
+trap type 4 code 0 rip ffffffff810081a9 cs 8 rflags 10282 cr 2 23a896000 cpl 6 rsp ffff80000e9df410
+gsbase 0xffffffff81908ff0 kgsbase 0x0
+panic: trap type 4, code=0, pc=ffffffff810081a9
+syncing disks...18 18 18 18 18 18 18 18
+</code></pre>
+<p>
+原因はあまり調べていないが、どうもインストールメディアの読み込みに失敗している\
+ようで、インストールに必要なファイルをウェブ上からダウンロードする方法\
+を選択すると問題なくインストールできた。
+</p>
+
+<h3>ファイアーフォールの設定</h3>
+<p>
+メールの送受信等に必要なポートを開ける:\
+</p>
+<ul>
+<li>TCP 22: ssh接続用</li>
+<li>UDP 53: DNSとの通信用</li>
+<li>TCP 25: SMTPの通信用</li>
+<li>TCP 587: メールクライアントからMTAへの通信用(メール送信時)</li>
+<li>TCP 993: メールクライアントからMDAへの通信用(メール受信時)</li>
+<li>TCP 80, 443: <code>acme-client(1)</code>によるサーバー証明書の取得用</li>
+</ul>
+<p>
+以上の設定を<code>/etc/pf.conf</code>に設定する:
+</p>
+<pre><code>\
+set skip on lo
+
+block return    # block stateless traffic
+pass in log proto tcp from any to any port 22 #ssh
+
+pass out proto udp from any to <i>DNSのIPアドレス</i> port 53 #DNS
+pass out proto udp from any to any port 123 #ntp
+
+pass proto icmp #ping
+pass proto tcp from any to any port { 80, 443 } #www
+pass proto tcp from any to any port { 25, 587, 993 } #mail
+</code></pre>
+<p>
+<code>pf(4)</code>の設定を反映:
+</p>
+<pre><code>\
+# pfctl -f /etc/pf.conf
+</code></pre>
+
+<h3>DNSの設定</h3>
+<h4>A, MX, SPF, DMARC</h4>
+<p>
+DNSのレコードを設定する。\
+ムームーDNSの場合、コントロールパネルにログインし、サイドバーから\
+ドメイン管理&gt;ドメイン操作&gt;ムームーDNSと進み、設定するドメインの変更ボタン\
+をクリックすると設定画面がでるので、以下のように設定する:\
+</p>
+<table>
+<thead>
+<tr>
+<th>サブドメイン</th>
+<th>種別</th>
+<th>内容</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>A</td>
+<td><i>sss.sss.sss.sss</i></td>
+<td></td>
+</tr>
+<tr>
+<td>mail</td>
+<td>A</td>
+<td><i>sss.sss.sss.sss</i></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>MX</td>
+<td>mail.mtkn.jp</td>
+<td>10</td>
+</tr>
+<tr>
+<td></td>
+<td>TXT</td>
+<td>v=spf1 mx -all</td>
+<td></td>
+</tr>
+<tr>
+<td>_dmarc</td>
+<td>TXT</td>
+<td>v=DMARC1;p=reject;rua=mailto:postmaster@mtkn.jp</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+ひとつめのAレコードは、ドメイン名(mtkn.jp)にIPアドレス(<i>sss.sss.sss.sss</i>)を\
+紐付けるものである。\
+ふたつめはmail.mtkn.jpのIPアドレスを登録するものである。\
+みっつめのMXレコードは、このドメイン宛てのメール(user@mtkn.jp等)をどこの\
+サーバーに送信するかを決めるものである。上記の設定では、mail.mtkn.jpに送信\
+するようにしている。\
+以上の設定で、user@mtkn.jp宛てのメールは、mail.mtkn.jpというサーバーに\
+送信すればよいことが分かり、さらにこのサーバーのIPアドレスは<i>sss.sss.sss.sss</i>\
+であることも分かる。
+</p>
+<p>
+次のTXTレコードはSPFレコードである。\
+v=spf1でSPFのバージョンを示し、mxでドメインのMXレコードに登録された\
+IPアドレスからの送信を許可し、-allでそれ以外のIPアドレスからの送信\
+を禁止している。
+</p>
+<p>
+最後のものはDMARCレコードである。\
+v=DMARC1でバージョンを示し、p=rejectで、本人確認をクリアしなかったメール\
+について、その受信者が受信を拒否するように指定している。\
+rua=mailto:postmaster@mtkn.jpでは、本人確認をクリアしなかったメール\
+を受信した場合の通報先を指定している。\
+</p>
+
+<h4>PTR</h4>
+<p>\
+PTRレコードを設定する。\
+さくらのVPSの場合、VPS管理画面にログインし、ネットワーク>\
+ホスト名逆引き登録と進み、カスタムホスト名に自分のドメイン名\
+(mtkn.jp)を入力する。
+</p>
+
+<h3>OpenSMTPDの設定</h3>
+<h4>ユーザーの作成</h4>
+<p>
+メールの送受信を担当するユーザーを作成する:\
+</p>
+<pre><code>\
+# useradd -m -c "Virtual Mail" -d /var/vmail -s /sbin/nologin vmail
+</code></pre>
+
+<h4>サーバー証明書の取得</h4>
+<p>
+<code>httpd(8)</code>の設定ファイルを作成する。\
+<code>/etc/examples</code>からサンプルの設定ファイルをコピーして編集する。\
+変更箇所はドメイン名だけでいい。\
+編集後、httpdを起動する。\
+</p>
+<pre><code>\
+# cp /etc/examples/httpd.conf /etc/
+# vi /etc/httpd.conf
+# echo httpd_flags= &gt;&gt; /etc/rc.conf.local
+# rcctl start httpd
+# rcctl enable httpd
+</code></pre>
+
+<p>
+続いて<code>acme-client(1)</code>を使ってLet's Encryptでサーバー証明書を発行する。\
+まずはこちらもサンプルの設定ファイルをコピーしてドメイン名を変更する。\
+その後、<code>acme-client(1)</code>を実行し、さらに<code>cron(8)</code>に\
+登録することで、証明書が自動で更新されるようにする。\
+</p>
+<pre><code>\
+# cp /etc/examples/acme-client.conf /etc/
+# vi /etc/acme-client.conf
+# acme-client -v mail.mtkn.jp
+# crontab -e
+</code></pre>
+
+<pre><code>\
+#minute hour    mday    month   wday    [flags] command
+~ 2 * * * acme-client mail.mtkn.jp &amp;&amp; rcctl restart smtpd
+</code></pre>
+
+<h4>ドメインキーの作成とDNSへの登録</h4>
+<p>
+OpenSMTPD用のDKIMフィルターをインストールする。
+</p>
+<pre><code>\
+# pkg_add opensmtpd-filter-dkimsign
+</code></pre>
+
+<p>
+ドメインキーとしてRSAの秘密鍵と公開鍵を作成する。\
+DNSのTXTレコードの制約により、鍵の長さは1024ビットにする。
+</p>
+<pre><code>\
+# openssl genrsa -out /etc/mail/dkim/private.key 1024
+# openssl rsa -in /etc/mail/dkim/private.key -pubout -out /etc/mail/dkim/public.key
+# chown -r _dkimsign:_dkimsign /etc/mail/dkim
+# chmod 0400 /etc/mail/dkim/private.key
+</code></pre>
+
+<p>\
+作成したドメインキーの公開鍵をDNSに登録する:\
+</p>
+<table>
+<thead>
+<tr>
+<th>サブドメイン</th>
+<th>種別</th>
+<th>内容</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>selector1._domainkey.mail</td>
+<td>TXT</td>
+<td>v=DKIM1;k=rsa;p=<i>公開鍵</i></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+サブドメインのselector1は\
+以下のsmtpd.confで<code>filter-dkimsign</code>の-sオプションに
+指定してものと同じものであれば他のものでもいい。\
+</p>
+
+<h4>smtpd.confの設定</h4>
+<p>
+/etc/mail/smtpd.confを以下の通り変更:\
+</p>
+<pre><code>\
+# 認証に使用するサーバー証明書と秘密鍵を&quot;mtkn.jp&quot;という名前で登録。
+# 証明書のファイルは先程acme-client(1)で取得したもの。
+pki mtkn.jp cert &quot;/etc/ssl/mail.mtkn.jp.fullchain.pem&quot;
+pki mtkn.jp key &quot;/etc/ssl/private/mail.mtkn.jp.key&quot;
+
+# テーブルの登録
+# ローカルに届いたメールの転送を設定するテーブル
+table aliases file:/etc/mail/aliases
+# ユーザーの名前と暗号化されたパスワードのテーブル
+table passwd file:/etc/mail/passwd
+# メールの転送を設定するテーブル
+table virtuals file:/etc/mail/virtuals
+
+# フィルターの登録
+# ドメインキーによる署名を付加するフィルター
+filter dkim_sign proc-exec\\
+	&quot;filter-dkimsign -d mail.mtkn.jp -s selector1\\
+	-k /etc/mail/dkim/private.key&quot; user _dkimsign group _dkimsign
+# DNSの逆引き(PTRレコード)ができなかった場合に受信を拒否するフィルター
+filter check_rdns phase connect match !rdns disconnect &quot;550 no rDNS.&quot;
+# 正引き(Aレコード)と逆引き(PTRレコード)でDNSのレコードが一致しなかった
+# 場合に受信を拒否するフィルター
+filter check_fcrdns phase connect match !fcrdns disconnect &quot;550 no FCrDNS.&quot;
+
+# 各ネットワークインターフェース毎の処理を設定。
+listen on socket
+listen on lo0
+# vio0というインターフェースの25番ポートに届いたものに関する設定。
+# 外部からmtkn.jp宛に届いたものの処理である。
+# 最初に登録した証明書と秘密鍵を使ってMTAの本人確認をし、
+# 上で設定したDNSに関するフィルターを適応。
+listen on vio0 port 25 tls pki mtkn.jp hostname &quot;mail.mtkn.jp&quot;\\
+	filter { check_rdns, check_fcrdns }
+# vio0というインターフェースのsubmission(587番)ポートに関する設定。
+# mtkn.jpのユーザー(e.g. user@mtkn.jp)から任意の人宛に送信される
+# メールに関する設定。
+# 上と同様に&quot;mtkn.jp”という名前で登録されたpkiを使ってMTAの本人確認をし、
+# &quot;passwd&quot;という名前で登録したパスワードで認証し、
+# さらにドメインキーでメールに署名する。
+listen on vio0 mask-src port submission smtps pki mtkn.jp\\
+	hostname &quot;mail.mtkn.jp&quot; auth &lt;passwd&gt; filter dkim_sign
+
+# 各種メールの処理を定義する。
+# 各処理が実行される条件はこの後定義する。
+# ローカルメールはデフォルトのまま
+action &quot;local_mail&quot; mbox alias &lt;aliases&gt;
+# 自分のドメイン宛のメールは/var/vmail/以下に振り分けてmaildir形式で保存。
+action &quot;domain&quot; maildir &quot;/var/vmail/%{dest.domain:lowercase}/%{dest.user:lowercase}&quot;\\
+	virtual &lt;virtuals&gt;
+# 他のドメイン宛ては宛先へ転送。
+# 他のsmtpサーバーとの接続を確立する際にデフォルトではこのコンピュータのホスト名(僕の場合"sakura.mtkn.jp")で
+# 自己紹介しており、DNSレコードが見付からないとおこられていたため helo "mtkn.jp" を追加
+action &quot;outbound&quot; relay helo "mtkn.jp"
+
+# どういう条件でどういう処理をするかを定義する。
+# 任意の送信元から自分のドメイン宛ては上で定義したdomainという処理をする。
+# ここでは/var/vmail/以下に振り分けて保存する。
+match from any for domain mtkn.jp action &quot;domain&quot;
+# このサーバー内でのメールはlocal_mailとして処理。
+match from local for local action &quot;local_mail&quot;
+# このサーバー内から他所へのメールは宛先に転送
+match from local for any action &quot;outbound&quot;
+# 外部から来た他所宛てのメールは認証されているものに限り転送。
+# authを忘れると多分このサーバー経由で迷惑メールが送られる危険がある。
+match auth from any for any action &quot;outbound&quot;
+</code></pre>
+
+<h4>各テーブルの作成</h4>
+<p>
+上記の設定ファイルの<code>table</code>で指定したテーブルを作成する。\
+<code>/etc/mail/aliases</code>は特に変更しなくてもいい。\
+<code>/etc/mail/passwd</code>にはメールアカウントと暗号化されたパスワードを\
+保存する。パスワードの暗号化には<code>smtpctl(8)</code>を使う:\
+</p>
+<pre><code>\
+# echo user@mtkn.jp:$(smtpctl encrypt) &gt;&gt; /etc/mail/passwd
+<i>パスワードを入力し、エンター、Ctrl-D</i>
+</code></pre>
+
+<p>
+<code>/etc/mail/virtuals</code>にはメールの転送を設定できる。\
+以下のようにする:\
+</p>
+<pre><code>\
+abuse@mtkn.jp         user@mtkn.jp
+postmaster@mtkn.jp    user@mtkn.jp
+webmaster@mtkn.jp     user@mtkn.jp
+user@mtkn.jp          vmail
+</code></pre>
+<p>
+この設定で、例えばabuse@mtkn.jp宛てのメールがuser@mtkn.jpに転送される。\
+abuse, postmaster, webmasterはなんか一応作っとけみたいに書いてたけど\
+必要なんかな？
+</p>
+
+<h3>Dovecotの設定</h3>
+<p>
+MDAとして<code>dovecot(1)</code>をインストールする。\
+</p>
+<pre><code>\
+# pkg_add dovecot
+</code></pre>
+<p>
+dhparamを作成する(時間がかかる):
+</p>
+<pre><code>\
+# openssl dhparam -out /etc/ssl/dh.pem 4096
+</code></pre>
+
+<p>
+わかりにくい設定ファイルをどけてシンプルなものに書き直す:
+</p>
+<pre><code>\
+# mv /etc/dovecot/dovecot.conf /etc/dovecot/dovecot.conf.orig
+# vi /etc/dovecot/dovecot.conf
+</code></pre>
+<p>
+ドキュメントは公式ウェブサイトで確認できる。\
+分量が多すぎて読む気にならない。\
+サンプルの設定ファイルにも各項目の説明と既定値が書いてあるがこれも分かりにくい。\
+パスワードが漏洩するのはとりあえず避けたいので、<code>ssl = required</code>\
+と暗号化されていないIMAPを<code>port = 0</code>として無効にする。\
+他はとりあえず以下の設定で動く:\
+</p>
+<pre><code>\
+# IPv4は全て監視
+listen = *
+
+# SSL接続のみ許可
+ssl = required
+
+# SSLに使用するファイル
+ssl_cert = &lt;/etc/ssl/mail.mtkn.jp.fullchain.pem
+ssl_key = &lt;/etc/ssl/private/mail.mtkn.jp.key
+ssl_dh = &lt;/etc/ssl/dh.pem
+
+# メールの保存場所は各ユーザーのホームディレクトリ。
+# ホームディレクトリの場所は以下のuserdbで設定。
+mail_location = maildir:~
+
+# パスワードのファイル。
+# OpenSMTPDと共有。
+passdb {
+    args = scheme=BLF-CRYPT /etc/mail/passwd
+    driver = passwd-file
+}
+
+# ユーザーの設定。
+# ホームディレクトリは/var/vmail/<i>ドメイン</i>/<i>ユーザー名</i>
+userdb {
+    args = uid=vmail gid=vmail home=/var/vmail/%d/%n
+    driver = static
+}
+
+# 使用するプロトコル。
+protocols = imap lmtp
+
+# SSLを使ったIMAPSのみを許可。
+service imap-login {
+  inet_listener imaps {
+    port = 993
+    ssl = yes
+  }
+  # Disable imap
+  inet_listener imap {
+    port = 0
+  }
+}
+</code></pre>
+<pre><code>\
+# rcctl start dovecot
+# rcctl enable dovecot
+</code></pre>
+
+<p>
+サーバーの証明書が更新される際に<code>dovecot(1)</code>も再読み込みされるように\
+<code>cron(8)</code>に追加しておく:
+</p>
+<pre><code>\
+crontab -e
+</code></pre>
+
+<pre><code>\
+#minute hour    mday    month   wday    [flags] command
+~ 2 * * * acme-client mail.mtkn.jp &amp;&amp; rcctl restart smtpd &amp;&amp; rcctl reload dovecot
+</code></pre>
+
+<h3>テスト</h3>
+<p>
+手元のメールクライアントから送受信のテストをする。\
+特にgmail等に送った際に迷惑メールに分類されないかどうか確認する。\
+以上の設定で、gmailへの送受信は問題なかった。\
+また、<code>neomutt(1)</code>、<code>thunderbird(1)</code>からログイン\
+及び送受信できることも確認した。\
+</p>
+<p>
+<date>2025-11-03</date> <code>smtpd.conf</code>に<code>helo "mtkn.jp"</code>を追加し、\
+<a href="https://www.mail-tester.com/">mail-tester.com</a>というサイトにてテストしたところ満点をもらえた。\
+gmailへの送信でよく迷惑メールに分類されていたが、<code>HELO</code>のときにDNSに登録されていない\
+ホスト名を返していたのが原因かもしれない。\
+</p>
+
+<h2>参考文献</h2>
+<ul>
+<li><a href="https://unixsheikh.com/tutorials/arch-linux-mail-server-tutorial-part-1-what-is-email.html">Arch Linux mail server tutorial - part 1 - What is email?.unixsheikh.com</a></li>
+<li><a href="https://unixsheikh.com/tutorials/arch-linux-mail-server-tutorial-part-2-opensmtpd-dovecot-dkimproxy-and-lets-encrypt.html">Arch Linux mail server tutorial - part 2 - OpenSMTPD, Dovecot, DKIMproxy, and Let's Encrypt.unixsheikh.com</a></li>
+<li><a href="https://unixsheikh.com/tutorials/arch-linux-mail-server-tutorial-part-3-get-dns-right-it-is-important.html">Arch Linux mail server tutorial - part 3 - Get DNS right, it's important!.unixsheikh.com</a></li>
+<li><a href="https://man.openbsd.org/smtpd">smtpd(8).OpenBSD Manual Pages</a></li>
+<li><a href="https://man.openbsd.org/smtpd.conf">smtpd.conf(5).OpenBSD Manual Pages</a></li>
+<li><a href="https://man.openbsd.org/httpd">httpd(8).OpenBSD Manual Pages</a></li>
+<li><a href="https://man.openbsd.org/httpd.conf">httpd.conf(5).OpenBSD Manual Pages</a></li>
+<li><a href="https://man.openbsd.org/acme-client">acme-client(1).OpenBSD Manual Pages</a></li>
+<li><a href="https://man.openbsd.org/acme-client.conf">acme-client.conf(5).OpenBSD Manual Pages</a></li>
+<li><a href="https://doc.dovecot.org/">Dovecot manual — Dovecot documentation</a></li>
+</ul>

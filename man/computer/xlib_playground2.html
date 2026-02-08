@@ -1,0 +1,229 @@
+<h1>Xlibで遊んでみる2</h1>
+<time>2022-12-22</time>
+
+<p>前回: <a href="xlib_playground1.html">Xlibで遊んでみる1</a></p>
+<p>言語はC言語である。ソースコードは\
+<a href="https://git.mtkn.jp/xlib_playground">ここ</a>にある。
+</p>
+
+<h2>FPSの固定</h2>
+<p>前のフレームからの経過時間を計測して<code>1.0/FPS</code>を越えるまで待機させる。\
+このときに<code>nanosleep()</code>を使うとなぜか上手くいかなかった。\
+ナノ秒単位で処理できそうな名前なのに使えない。\
+多分OSのコンテクストスイッチがどうとかいう話やと思う。\
+知らんけど。\
+組み込みとかで使うんかな？
+</p>
+
+<p>
+とりあえず<code>while</code>ループの中で\
+ひたすら時刻を読んでいる。\
+リソースの無駄遣いではないのだろうか:
+</p>
+<pre><code>#defin FPS 60
+
+int
+main(void)
+{
+	long t0, t1, dt;
+	int fps_count;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	t0 = ts.tv_nsec;
+
+	while (!quit) {
+		// fix fps
+		dt = 0;
+		while (dt &lt; 1.0 * 1000 * 1000 * 1000 / FPS){
+			clock_gettime(CLOCK_MONOTONIC, &ts);
+			t1 = ts.tv_nsec;
+			dt = t1 &gt; t0 ? t1 - t0 : t1 - t0 + 1000 * 1000 * 1000;
+		}
+		// count fps.
+		fps_count++;
+		if (t1 &lt; t0){
+			printf("fps: %u\n", fps_count);
+			fps_count = 0;
+		}
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		t0 = ts.tv_nsec;
+	}
+}
+</code></pre>
+<p>
+時刻は<code>clock_gettime()</code>で測定して1秒未満の部分: <code>tv_nsec</code>\
+だけを利用している。<code>tv_nsec</code>はナノ秒ナノで、10<sup>9</sup>を掛けている。\
+<code>dt = t1 > t0 ? t1 - t0 : t1 - t0 + 1000 * 1000 * 1000</code>で前回の\
+時刻と現在の時刻の少数部分を比較している。繰り上がりがあれば前回の時刻よりも\
+現在の時刻の方が小さくなるので1秒足すことで調整している。\
+</p>
+<p>
+FPSの計測の部分は、フレーム毎に<code>fps_count</code>を1ずつ増やし、\
+ナノ秒が繰り上がった時点での<code>fps_count</code>を表示している。\
+</p>
+<p>
+あまり正確な方法ではないように思うが、コンパクトにまとまったのではないだろうか。\
+</p>
+
+<h2>キーボード入力の処理</h2>
+<p>キーボードからの入力を受け取る:</p>
+<pre><code>XSelectInput(display, window,
+    ExposureMask|KeyPressMask|KeyReleaseMask);
+</code></pre>
+<p>ここではキーボードのキーを押した時と離した時に<code>XEvent</code>の通知を\
+受け取るように設定した。
+</p>
+<p>
+<code>XNextEvent()</code>からひとつずつ入力を受け取ると、\
+複数のキーが同時に押された時にうまく処理できなかったので、\
+押されているキーを配列に保存しておくことにした:\
+</p>
+<pre><code>enum Keys {
+	Key_D,
+	Key_S,
+	Key_A,
+	Key_W,
+	Key_Space,
+	Num_Key, //number of keys in this enum
+};
+enum Key_State {
+	Key_Up,
+	Key_Down,
+};
+
+int key_state[Num_Key];
+</code></pre>
+
+<p>
+入力の処理は<code>handle_inputs()</code>関数内で行なう。\
+<code>A</code>、<code>S</code>、<code>D</code>、<code>W</code>\
+のうちどれかのキーが押されているとそれぞれ左、下、右、上方向に\
+速度を加算するようにした。また、<code>Q</code>が押されるか、\
+windowが破壊されると<code>quit</code>フラグを<code>1</code>にして\
+メインループから抜けるようにしている:\
+</p>
+<pre><code>int   quit;
+
+void
+handle_inputs(void)
+{
+       XEvent event;
+       while (XPending(display) &gt; 0) {
+               XNextEvent(display, &event);
+               switch (event.type) {
+               case KeyPress: {
+                       switch (XLookupKeysym(&event.xkey, 0)) {
+                       case 'q':
+                               quit = 1;
+                               break;
+                       case 'd':
+                               key_state[Key_D] = Key_Down;
+                               break;
+                       case 'a':
+                               key_state[Key_A] = Key_Down;
+                               break;
+                       case 'w':
+                               key_state[Key_W] = Key_Down;
+                               break;
+                       case 's':
+                               key_state[Key_S] = Key_Down;
+                               break;
+                       default:
+                               break;
+                       }
+               } break;
+               case KeyRelease: {
+                       switch (XLookupKeysym(&event.xkey, 0)) {
+                       case 'd':
+                               key_state[Key_D] = Key_Up;
+                               break;
+                       case 'a':
+                               key_state[Key_A] = Key_Up;
+                               break;
+                       case 'w':
+                               key_state[Key_W] = Key_Up;
+                               break;
+
+                       case 's':
+                               key_state[Key_S] = Key_Up;
+                               break;
+                       default:
+                               break;
+                       }
+               } break;
+               case ClientMessage: {
+                       if ((Atom) event.xclient.data.l[0] == wm_delete_window) {
+                               quit = 1;
+                       }
+               } break;
+               default:
+                       break;
+               }
+       }
+
+       vx = vy = 0;
+       if (key_state[Key_D] == Key_Down)
+               vx += 300;
+       if (key_state[Key_A] == Key_Down)
+               vx += -300;
+       if (key_state[Key_S] == Key_Down)
+               vy += 300;
+       if (key_state[Key_W] == Key_Down)
+               vy += -300;
+}
+</code></pre>
+
+<p>
+入力によって変更された速度は、<code>main()</code>関数内で次の座標を\
+計算するために使用される:
+</p>
+<pre><code>float px = 200, py = 200;
+float vx = 0, vy = 0;
+int   width = 40, height = 40;
+
+int
+main(void)
+{
+	/* ... */
+	quit = 0;
+	while (!quit) {
+		handle_input()
+		/* ... */
+		px = px + vx * dt / 1000 / 1000 / 1000;
+		py = py + vy * dt / 1000 / 1000 / 1000;
+		// bind within the window
+		if (px &lt; 0)
+			px = 0;
+		if (win_width &lt; px + width)
+			px = win_width - width;
+		if (py &lt; 0)
+			py = 0;
+		if (win_height &lt; py + height)
+			py = win_height - height;
+
+		XClearArea(display, window,
+		    0, 0,                  // position
+		    win_width, win_height, // width and height
+		    False);
+		XFillRectangle(display, window, gc,
+		    px, py,    // position
+		    width, height);   // width and height
+	}
+	/* ... */
+}
+</code></pre>
+
+<h2>完成品</h2>
+<a href="https://git.mtkn.jp/xlib_playground/file/ex2/ex2.c.html">ソースコード</a>
+<p>色を変えてみた。</p>
+<video controls>
+	<source src="videos/ex2.webm" type="video/webm">
+</video>
+
+<h2>参考</h2>
+<ul>
+<li><a href="https://tronche.com/gui/x/xlib/">The Xlib Manual(html conversion)</a></li>
+</ul>
+<p>次の記事: \
+<a href="xlib_playground3.html">Xlibで遊んでみる3</a>
+</p>
