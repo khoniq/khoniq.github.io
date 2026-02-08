@@ -1,0 +1,56 @@
+<h1>OpenBSDインストール</h1>
+<time>2021-12-16</time>
+<p>OpenBSDをノートパソコンにインストールしたのでその時のメモ</p>
+
+<p>インストール用のライブUSBを作成</p>
+<p>ブート</p>
+<p>指示通りインストール</p>
+
+<p>Reboot</p>
+<p>通常ユーザーでログインしてルートユーザーになる</p>
+<pre><code>$ su
+Password:
+</code></pre>
+
+<p><code>doas(1)</code>を設定して通常ユーザーに戻る</p>
+<pre><code># cp /etc/examples/doas.conf /etc/
+# sed -i 's/permit keepenv :wheel/permit nopass keepenv :wheel/' /etc/doas.conf
+# exit
+$ doas echo unko
+unko
+</code></pre>
+
+<p><code>syspatch(8)</code>をあてる</p>
+<pre><code>$ doas syspatch
+...
+Relinking to create unique kernel... done.
+</pre></code>
+
+<p><code>apmd(8)</code>を設定</p>
+<pre><code>$ doas rcctl enable apmd
+$ doas set apmd flags -A -z 10
+$ rcctl start apmd
+apmd (ok)
+</pre></code>
+
+<p>wi-fiを設定</p>
+<pre><code>$ ifconfig
+...
+iwn0 flags=...
+...
+$ ifconfig iwn0 up
+$ doas sh -c 'echo "join <i>ssid</i> wpakey <i>password</i>
+autoconf" > /etc/hostname.iwn0'
+$ doas chown root:wheel /etc/hostname.iwn9
+$ doas chmod 0640 /etc/hostname.iwn0
+$ doas sh /etc/netstart
+...
+</pre></code>
+
+<p>必要なパッケージをインストール</p>
+<p><code>dotfiles</code>をダウンロード</p>
+<p>suckless utilitiesをインストール</p>
+<p><code>man(1)</code>のパスを設定</p>
+<p><code>slock(1)</code>を設定</p>
+<p><code>xenodm(1)</code>を設定</p>
+<p><code>mail(1)</code>の設定<a href="https://www.c0ffee.net/blog/openbsd-on-a-laptop/#base-utilities">ref</a></p>
