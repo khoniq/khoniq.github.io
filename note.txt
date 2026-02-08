@@ -3,4 +3,4 @@
 
 絕對在man裡面創作，然後rsync到pub
 man/ 有任何變動 → 只做一個動作：
-rsync -av --delete man/ pub/
+rsync -av --delete man/ docs/
