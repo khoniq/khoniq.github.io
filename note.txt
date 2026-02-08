@@ -1,23 +1,4 @@
-articles to write
-	life without a phone
-	openbsd installation
-	hosting xmpp server
-	hosting activitypub server
-	hosting git server with stagit
-	9p
-	openbsd mail client
-	nvi and tmux
-		!'atmux load-buffer - u
-	riscv assembly programming with qemu, openbsd.
 
-plants
-wakayama shops
-	coffee beans hiro
-	和茶縁
-	とむそーや
-	黒沢牧場
-	Grace Cafe
-	白石画材
-	魚屋 closed 2024-01-01
-	丸紀屋
-	芳川粉屋
+絕對不碰pub
+
+絕對在man裡面創作，然後rsync到pub
