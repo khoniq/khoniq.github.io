@@ -1,0 +1,15 @@
+#!/bin/sh
+
+layout=data/layout.html
+src=$1        # man/xxx.html
+dest=$2       # pub/xxx.html
+
+title=$(grep -m1 "<h1>" "$src" | sed 's/<[^>]*>//g')
+
+sed \
+  -e "s|{{title}}|$title|g" \
+  -e "/{{content}}/{
+        r $src
+        d
+      }" \
+  "$layout" > "$dest"

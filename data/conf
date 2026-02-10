@@ -1,11 +1,12 @@
 man=$(pwd)/man
 pub=$(pwd)/pub
+docs=$(pwd)/docs
 temp=$(pwd)/temp
 data=$(pwd)/data
 weblog=$data/weblog
 header="$temp/header.html"
 footer="$temp/footer.html"
-title="松露庵"
+title="山日ノート"
 rss_description="ウェブページの更新履歴"
 rss="$pub/rss.xml"
-url="https://www.mtkn.jp"
+url="https://yamanyima.tw"
