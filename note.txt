@@ -6,3 +6,7 @@ man/ 有任何變動 → 只做一個動作：
 rsync -av --delete man/ docs/
 
 然後git add commit push
+
+
+bin/build_journal_post man/journal/posts/20260210.html > pub/journal/posts/20260210.html
+bin/build_journal_post man/journal/posts/20260210.html > docs/journal/posts/20260210.html
