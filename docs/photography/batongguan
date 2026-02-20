@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
+	<title>山日ノート</title>
+</head>
+<body>
+	<header>
+		<a href="/">主頁</a> |
+		<a href="/about.html">自己紹介</a> |
+		<a href="/journal">雑念</a> |
+		<a href="/photography">写真</a> |
+		<a href="/films">映画</a> |
+		<a href="/gastronomy">食</a> |
+	</header>
+	<main>
+		<article>
+            
+
+<h1>日治八通關古道</h1>
+<time>2021-10-15</time>
+<ul class="galind">
+<li>
+<i>がいし（礙子、碍子、がい子）@ 八通關古道</i>
+<a data-flickr-embed="true" href="https://www.flickr.com/photos/94621928@N07/51672748849/in/album-72157720134784171" title="Untitled"><img src="https://live.staticflickr.com/65535/51672748849_b9505b3740.jpg" width="500" height="333" alt="Untitled"/></a><script async src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
+</li>
+</ul>
+
+		</article>
+
+	</main>
+	<footer>
+		<address>khoniq.chen(at)gmail(dot)com</address>
+		<a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" rel="license noopener noreferrer">CC0 1.0</a>
+	</footer>
+</body>
+</html>
