@@ -7,6 +7,6 @@ weblog=$data/weblog
 header="$temp/header.html"
 footer="$temp/footer.html"
 title="山日ノート"
-rss_description="ウェブページの更新履歴"
+rss_description="更新履歴"
 rss="$pub/rss.xml"
 url="https://yamanyima.tw"
