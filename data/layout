@@ -6,6 +6,16 @@
 	<link rel="stylesheet" type="text/css" href="/style.css">
 	<link rel="icon" type="image/x-icon" href="/pics/favicon.ico">
 	<title>山日ノート</title>
+	
+	<meta name="description" content="山日ノート｜雑念・写真・映画・食の記録。">
+	<meta property="og:title" content="山日ノート">
+	<meta property="og:description" content="雑念・写真・映画・食の記録。">
+	<meta property="og:type" content="website">
+	<meta property="og:url" content="https://yamanyima.tw/">
+	<meta property="og:image" content="https://yamanyima.tw/pics/og.png">
+	<meta name="twitter:card" content="summary_large_image">
+	<link rel="alternate" type="application/rss+xml" title="山日ノート RSS" href="/rss.xml">
+
 </head>
 <body>
 	<header>

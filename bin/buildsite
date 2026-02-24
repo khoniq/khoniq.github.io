@@ -1,0 +1,122 @@
+#!/bin/sh
+set -eu
+
+# ---- load config ----
+. ./data/conf
+
+mkdir -p "$pub" "$temp" "$data"
+
+# ---- helpers ----
+extract_title() {
+  # 取第一個 <h1>...</h1> 的純文字
+  # 找不到就回傳 conf 的 title
+  t="$(grep -m 1 '<h1>' "$1" 2>/dev/null | sed 's/.*<h1[^>]*>//; s/<\/h1>.*//; s/^[[:space:]]*//; s/[[:space:]]*$//')"
+  if [ -n "${t:-}" ]; then
+    printf "%s" "$t"
+  else
+    printf "%s" "$title"
+  fi
+}
+
+escape_sed_repl() {
+  # 逃逸 sed replacement 會炸的字元：\  &  |
+  # （我們等等用 | 當分隔符）
+  printf '%s' "$1" | sed 's/[\\&|]/\\&/g'
+}
+
+rfc2822_date() {
+  # Linux: date -R -d "@epoch"
+  # macOS: date -r epoch "+%a, %d %b %Y %H:%M:%S %z"
+  if date -R -d "@$1" >/dev/null 2>&1; then
+    date -R -d "@$1"
+  else
+    date -r "$1" "+%a, %d %b %Y %H:%M:%S %z"
+  fi
+}
+
+url_from_rel() {
+  rel="$1"
+  case "$rel" in
+    */index.html) printf "/%s" "$(printf "%s" "$rel" | sed 's/index\.html$//')" ;;
+    *)           printf "/%s" "$rel" ;;
+  esac
+}
+
+# ---- step 1: generate man/journal/index.html (source-level index) ----
+if [ -x ./journal_update ]; then
+  ./journal_update || true
+fi
+
+# ---- step 2: build all pages ----
+weblog_tmp="$data/weblog.tmp"
+: > "$weblog_tmp"
+
+# man 底下所有 .html 都套模板輸出
+find "$man" -type f -name '*.html' | while IFS= read -r src; do
+  rel="${src#$man/}"
+  out="$pub/$rel"
+  out_dir="$(dirname "$out")"
+  mkdir -p "$out_dir"
+
+  page_title="$(extract_title "$src")"
+
+  # 產生臨時 head（把 <!--title--> 換掉）
+  head_tmp="$temp/head.tmp.html"
+safe_title="$(escape_sed_repl "$page_title")"
+sed "s|<!--title-->|$safe_title|g" "$header" > "$head_tmp"
+
+  cat "$head_tmp" "$src" "$footer" > "$out"
+
+  # 記錄更新時間（用輸出檔 mtime）
+  if stat -c %Y "$out" >/dev/null 2>&1; then
+    epoch="$(stat -c %Y "$out")"
+  else
+    epoch="$(stat -f %m "$out")"
+  fi
+
+  page_url="$(url_from_rel "$rel")"
+  printf "%s %s\n" "$epoch" "$page_url" >> "$weblog_tmp"
+done
+
+# 整理 weblog：時間新到舊
+sort -nr "$weblog_tmp" > "$data/weblog"
+rm -f "$weblog_tmp"
+
+# ---- step 3: generate RSS (pub/rss.xml) ----
+rss_out="$pub/rss.xml"
+max_items=30
+
+{
+  echo '<?xml version="1.0" encoding="UTF-8"?>'
+  echo '<rss version="2.0">'
+  echo '<channel>'
+  echo "  <title>$title</title>"
+  echo "  <link>$url</link>"
+  echo "  <description>$rss_description</description>"
+
+  # 取最新 N 筆
+  n=0
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    epoch="$(printf "%s" "$line" | awk '{print $1}')"
+    path="$(printf "%s" "$line" | awk '{print $2}')"
+
+    item_link="$url$path"
+    item_date="$(rfc2822_date "$epoch")"
+
+    echo "  <item>"
+    echo "    <title>$path</title>"
+    echo "    <link>$item_link</link>"
+    echo "    <guid>$item_link</guid>"
+    echo "    <pubDate>$item_date</pubDate>"
+    echo "  </item>"
+
+    n=$((n+1))
+    [ "$n" -ge "$max_items" ] && break
+  done < "$data/weblog"
+
+  echo '</channel>'
+  echo '</rss>'
+} > "$rss_out"
+
+echo "Built: $pub (and RSS: $rss_out)"

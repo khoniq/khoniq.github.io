@@ -1,6 +1,5 @@
 man=$(pwd)/man
-pub=$(pwd)/pub
-docs=$(pwd)/docs
+pub=$(pwd)/docs
 temp=$(pwd)/temp
 data=$(pwd)/data
 weblog=$data/weblog
@@ -10,3 +9,4 @@ title="山日ノート"
 rss_description="更新履歴"
 rss="$pub/rss.xml"
 url="https://yamanyima.tw"
+base_url="https://yamanyima.tw"
