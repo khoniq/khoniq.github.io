@@ -51,6 +51,7 @@ fi
 weblog_tmp="$data/weblog.tmp"
 : > "$weblog_tmp"
 
+
 # man 底下所有 .html 都套模板輸出
 find "$man" -type f -name '*.html' | while IFS= read -r src; do
   rel="${src#$man/}"
