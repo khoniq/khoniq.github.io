@@ -20,7 +20,7 @@ extract_title() {
 
 escape_sed_repl() {
   # 逃逸 sed replacement 會炸的字元：\  &  |
-  # （我們等等用 | 當分隔符）
+  # 用 | 當分隔符
   printf '%s' "$1" | sed 's/[\\&|]/\\&/g'
 }
 
