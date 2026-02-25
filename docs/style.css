@@ -127,3 +127,11 @@ footer *{
 .galind li {
 	max-width: 300px;
 }
+
+.photo {
+  width: 90%;
+  max-width: 720px;
+  height: auto;
+  display: block;
+  margin: 40px auto;
+}
