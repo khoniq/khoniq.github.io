@@ -47,10 +47,17 @@ if [ -x ./journal_update ]; then
   ./journal_update || true
 fi
 
+# ---- step 1.5: sync static assets (css/img/js/etc.) ----
+# 把 man 裡除了 .html 以外的檔案同步到 docs
+rsync -av --exclude='*.html' "$man/" "$pub/"
+
 # ---- step 2: build all pages ----
 weblog_tmp="$data/weblog.tmp"
 : > "$weblog_tmp"
 
+# ---- copy static assets (images, etc.) ----
+rsync -av --exclude='*.html' "$man/" "$pub/"
+rsync -av --delete --exclude='*.html' "$man/" "$pub/"
 
 # man 底下所有 .html 都套模板輸出
 find "$man" -type f -name '*.html' | while IFS= read -r src; do
