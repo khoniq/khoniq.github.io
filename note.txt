@@ -1,12 +1,7 @@
+流程
+man/  →（build script）→  docs/
 
-絕對不碰pub
+bin/buildsiteRsync 可以把man的圖片同步到docs
 
-絕對在man裡面創作，然後rsync到doc
-man/ 有任何變動 → 只做一個動作：
-rsync -av --delete man/ docs/
-
-然後git add commit push
-
-
-bin/build_journal_post man/journal/posts/20260210.html > pub/journal/posts/20260210.html
-bin/build_journal_post man/journal/posts/20260210.html > docs/journal/posts/20260210.html
+bin/deploy "一定要寫"
+    可以push
