@@ -5,3 +5,6 @@ bin/buildsiteRsync 可以把man的圖片同步到docs
 
 bin/deploy "一定要寫"
     可以push
+
+
+redirect to 404
