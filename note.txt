@@ -1,10 +1,33 @@
-流程
-man/  →（build script）→  docs/
+山日ノート 維護筆記
+====================
 
-bin/buildsiteRsync 可以把man的圖片同步到docs
+資料夾
+  man/    原稿：只寫 <h1> 之後的內文，不含 <head> 和頁尾
+  docs/   成品：GitHub Pages 實際發布的網站（不要手改，會被覆蓋）
+  temp/   模板：header.html、footer.html（所有頁面共用的頭尾）
+  data/   conf 設定檔（網站名稱、網址）；weblog 由腳本自動產生
+  bin/    腳本
 
-bin/deploy "一定要寫"
-    可以push
+日常流程
+  1. 改 man/ 裡的 .html（或新增頁面、放圖片）
+  2. 新文章要加進 man/index.html 的「更新履歴」清單，格式：
+       <li>YYYY-MM-DD <a href="/路徑">標題</a></li>
+     RSS 只會收錄這份清單裡的項目
+  3. 在 repo 根目錄執行：
+       sh bin/deploy "commit 訊息"
+     它會自動：同步圖片 → 跑 buildsite → git commit → git push
 
+  只想在本機預覽、不推上去：
+       sh bin/buildsite
+     然後打開 docs/ 裡的檔案看
 
-redirect to 404
+bin/ 腳本說明
+  deploy          唯一需要的指令（訊息必填）
+  buildsite       man/ → docs/，套上頭尾模板，產生 rss.xml
+  buildsiteRsync  舊版，已被 deploy 取代，可刪
+  journal_update  雑念列表自動產生器，目前沒有被執行
+                  （buildsite 找 ./journal_update，但檔案在 bin/）
+                  → man/journal/index.html 目前要手動維護
+
+其他
+  網域設定在 docs/CNAME（yamanyima.tw）
