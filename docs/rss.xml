@@ -2,139 +2,44 @@
 <rss version="2.0">
 <channel>
   <title>山日ノート</title>
-  <link>https://yamanyima.tw</link>
+  <link>https://yamanyima.tw/</link>
   <description>更新履歴</description>
+  <language>zh-Hant</language>
   <item>
-    <title>/photography/cebu1.html</title>
-    <link>https://yamanyima.tw/photography/cebu1.html</link>
-    <guid>https://yamanyima.tw/photography/cebu1.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/photography/bkk202503.html</title>
-    <link>https://yamanyima.tw/photography/bkk202503.html</link>
-    <guid>https://yamanyima.tw/photography/bkk202503.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/photography/batongguan.html</title>
-    <link>https://yamanyima.tw/photography/batongguan.html</link>
-    <guid>https://yamanyima.tw/photography/batongguan.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/photography/</title>
-    <link>https://yamanyima.tw/photography/</link>
-    <guid>https://yamanyima.tw/photography/</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/journal/posts/philharmonicbrass.html</title>
-    <link>https://yamanyima.tw/journal/posts/philharmonicbrass.html</link>
-    <guid>https://yamanyima.tw/journal/posts/philharmonicbrass.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/journal/</title>
-    <link>https://yamanyima.tw/journal/</link>
-    <guid>https://yamanyima.tw/journal/</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/index.html</title>
-    <link>https://yamanyima.tw/index.html</link>
-    <guid>https://yamanyima.tw/index.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/gastronomy/tonkatsujp.html</title>
-    <link>https://yamanyima.tw/gastronomy/tonkatsujp.html</link>
-    <guid>https://yamanyima.tw/gastronomy/tonkatsujp.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/gastronomy/</title>
-    <link>https://yamanyima.tw/gastronomy/</link>
-    <guid>https://yamanyima.tw/gastronomy/</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/footprint/</title>
-    <link>https://yamanyima.tw/footprint/</link>
-    <guid>https://yamanyima.tw/footprint/</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/films/sentimentalvalue.html</title>
-    <link>https://yamanyima.tw/films/sentimentalvalue.html</link>
-    <guid>https://yamanyima.tw/films/sentimentalvalue.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/films/lefthandedgirl.html</title>
-    <link>https://yamanyima.tw/films/lefthandedgirl.html</link>
-    <guid>https://yamanyima.tw/films/lefthandedgirl.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/films/allofusstrangers.html</title>
+    <title>All of Us Strangers</title>
     <link>https://yamanyima.tw/films/allofusstrangers.html</link>
     <guid>https://yamanyima.tw/films/allofusstrangers.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
+    <pubDate>Thu, 19 Nov 2026 00:00:00 +0800</pubDate>
   </item>
   <item>
-    <title>/films/</title>
-    <link>https://yamanyima.tw/films/</link>
-    <guid>https://yamanyima.tw/films/</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
+    <title>Sentimental Value</title>
+    <link>https://yamanyima.tw/films/sentimentalValue.html</link>
+    <guid>https://yamanyima.tw/films/sentimentalValue.html</guid>
+    <pubDate>Wed, 11 Feb 2026 00:00:00 +0800</pubDate>
   </item>
   <item>
-    <title>/error/moved.html</title>
-    <link>https://yamanyima.tw/error/moved.html</link>
-    <guid>https://yamanyima.tw/error/moved.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
+    <title>愛樂銅管</title>
+    <link>https://yamanyima.tw/journal/posts/philharmonicbrass.html</link>
+    <guid>https://yamanyima.tw/journal/posts/philharmonicbrass.html</guid>
+    <pubDate>Sun, 01 Feb 2026 00:00:00 +0800</pubDate>
   </item>
   <item>
-    <title>/error/404.html</title>
-    <link>https://yamanyima.tw/error/404.html</link>
-    <guid>https://yamanyima.tw/error/404.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
+    <title>tonkatsu.jp 表參道</title>
+    <link>https://yamanyima.tw/gastronomy/tonkatsujp.html</link>
+    <guid>https://yamanyima.tw/gastronomy/tonkatsujp.html</guid>
+    <pubDate>Sat, 01 Nov 2025 00:00:00 +0800</pubDate>
   </item>
   <item>
-    <title>/draft/崁仔頂.html</title>
-    <link>https://yamanyima.tw/draft/崁仔頂.html</link>
-    <guid>https://yamanyima.tw/draft/崁仔頂.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
+    <title>左撇子女孩</title>
+    <link>https://yamanyima.tw/films/lefthandedgirl.html</link>
+    <guid>https://yamanyima.tw/films/lefthandedgirl.html</guid>
+    <pubDate>Fri, 31 Oct 2025 00:00:00 +0800</pubDate>
   </item>
   <item>
-    <title>/draft/soundOfFalling.html</title>
-    <link>https://yamanyima.tw/draft/soundOfFalling.html</link>
-    <guid>https://yamanyima.tw/draft/soundOfFalling.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/draft/potong.html</title>
-    <link>https://yamanyima.tw/draft/potong.html</link>
-    <guid>https://yamanyima.tw/draft/potong.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/draft/enoura.html</title>
-    <link>https://yamanyima.tw/draft/enoura.html</link>
-    <guid>https://yamanyima.tw/draft/enoura.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/draft/citizenko.html</title>
-    <link>https://yamanyima.tw/draft/citizenko.html</link>
-    <guid>https://yamanyima.tw/draft/citizenko.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
-  </item>
-  <item>
-    <title>/about.html</title>
-    <link>https://yamanyima.tw/about.html</link>
-    <guid>https://yamanyima.tw/about.html</guid>
-    <pubDate>Sun, 22 Nov 2026 18:11:45 -0600</pubDate>
+    <title>Bangkok 2025</title>
+    <link>https://yamanyima.tw/photography/bkk202503.html</link>
+    <guid>https://yamanyima.tw/photography/bkk202503.html</guid>
+    <pubDate>Wed, 05 Mar 2025 00:00:00 +0800</pubDate>
   </item>
 </channel>
 </rss>

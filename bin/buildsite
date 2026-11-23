@@ -83,38 +83,42 @@ done
 sort -nr "$weblog_tmp" > "$data/weblog"
 rm -f "$weblog_tmp"
 
-# ---- step 3: generate RSS (pub/rss.xml) ----
+# ---- step 3: generate RSS (pub/rss.xml) from 首頁「更新履歴」 ----
+# 只收錄 man/index.html 裡「更新履歴」清單的文章：
+#   <li>YYYY-MM-DD <a href="/路徑">標題</a></li>
 rss_out="$pub/rss.xml"
 max_items=30
+
+rss_date() {
+  # YYYY-MM-DD -> RFC 2822（台灣時間 00:00）
+  if [ "$(uname)" = Darwin ]; then
+    LC_ALL=C date -j -f "%Y-%m-%d" "$1" "+%a, %d %b %Y 00:00:00 +0800"
+  else
+    LC_ALL=C date -d "$1" "+%a, %d %b %Y 00:00:00 +0800"
+  fi
+}
 
 {
   echo '<?xml version="1.0" encoding="UTF-8"?>'
   echo '<rss version="2.0">'
   echo '<channel>'
   echo "  <title>$title</title>"
-  echo "  <link>$url</link>"
+  echo "  <link>$url/</link>"
   echo "  <description>$rss_description</description>"
+  echo "  <language>zh-Hant</language>"
 
-  # 取最新 N 筆
-  n=0
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    epoch="$(printf "%s" "$line" | awk '{print $1}')"
-    path="$(printf "%s" "$line" | awk '{print $2}')"
-
-    item_link="$url$path"
-    item_date="$(rfc2822_date "$epoch")"
-
+  awk '/更新履歴/{f=1} f&&/<\/ul>/{exit} f' "$man/index.html" |
+  grep '<li>' |
+  sed -n 's#.*<li>[[:space:]]*\([0-9-]\{10\}\)[[:space:]]*<a href="\([^"]*\)">\(.*\)</a>.*#\1	\2	\3#p' |
+  head -n "$max_items" |
+  while IFS='	' read -r d path t; do
     echo "  <item>"
-    echo "    <title>$path</title>"
-    echo "    <link>$item_link</link>"
-    echo "    <guid>$item_link</guid>"
-    echo "    <pubDate>$item_date</pubDate>"
+    echo "    <title>$t</title>"
+    echo "    <link>$url$path</link>"
+    echo "    <guid>$url$path</guid>"
+    echo "    <pubDate>$(rss_date "$d")</pubDate>"
     echo "  </item>"
-
-    n=$((n+1))
-    [ "$n" -ge "$max_items" ] && break
-  done < "$data/weblog"
+  done
 
   echo '</channel>'
   echo '</rss>'
