@@ -86,7 +86,8 @@ footer *{
 	a {
 		color: var(--dfg2);
 	}
-	pre {
+	pre,
+	.neighbors {
 		background-color: var(--dbg2);
 		border-color: var(--dfg);
 	}
@@ -100,10 +101,30 @@ footer *{
 	a {
 		color: var(--lfg2);
 	}
-	pre {
+	pre,
+	.neighbors {
 		background-color: var(--lbg2);
 		border-color: var(--lfg);
 	}
+}
+
+/* 芳鄰：外框與 pre 相同 */
+.neighbors {
+	margin: 1em 0;
+	padding: 1em;
+	border-style: solid;
+	border-radius: 5px;
+	border-width: 1px;
+}
+
+.neighbors h2 {
+	margin: 0 0 0.5em;
+	font-size: 1em;
+}
+
+.neighbors ul {
+	margin: 0;
+	padding-left: 1.2em;
 }
 
 .portrait {
@@ -134,16 +155,4 @@ footer *{
   height: auto;
   display: block;
   margin: 40px auto;
-}
-.songs {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 16px;
-}
-
-.songs iframe {
-	flex: 1 1 300px;
-	min-width: 0;
-	border: 0;
-	border-radius: 12px;
 }
