@@ -156,3 +156,15 @@ footer *{
   display: block;
   margin: 40px auto;
 }
+.songs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.songs iframe {
+	flex: 1 1 300px;
+	min-width: 0;
+	border: 0;
+	border-radius: 12px;
+}
